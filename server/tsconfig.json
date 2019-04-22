@@ -1,0 +1,23 @@
+{
+  "compileOnSave": true,
+  "compilerOptions": {
+      "module": "CommonJS",
+      "noImplicitAny": true,
+      "removeComments": true,
+      "preserveConstEnums": true,
+      "declaration": false,
+      "outDir": "./dist",
+      "allowJs": false,
+      "target": "ES2017",
+      "noUnusedLocals": true,
+      "experimentalDecorators": true,
+      "noUnusedParameters": true,
+      "sourceMap": false
+  },
+  "include": [
+      "./src/**/*","./src/*"
+  ],
+  "exclude": [
+      "./node_modules"
+  ]
+}
