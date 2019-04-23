@@ -4,6 +4,7 @@ import * as bodyparser from "koa-bodyparser"
 import { config } from "./config/config"
 import { makeRouter } from './util/route'
 import { logger } from './lib/baseMid'
+import { listenSocket } from './websocket/socket';
 
 export const app = new Koa()
 const serverConfig = config.server
@@ -31,6 +32,11 @@ app.use(bodyparser())
  * use router
  */
 makeRouter(app)
+
+/**
+ * 监听socketserver
+ */
+listenSocket(server)
 
 /**
  * Event listener for HTTP server "listening" event.
