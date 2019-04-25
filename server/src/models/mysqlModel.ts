@@ -48,7 +48,7 @@ export class MysqlModel<T> {
      * @template   批量插入/更新
      *  { 'hi':[1,2,3,4,5,6]}
      */
-    async update(sets: T, wheres: T) {
+    async update(sets: HashMap, wheres: HashMap) {
         return mysqlOp.update(this.table, sets, wheres)
     }
 }

@@ -20,6 +20,7 @@
     "koa-static": "^3.0.0",
     "koa-views": "^5.2.1",
     "pug": "^2.0.0-rc.1",
+    "redis": "^2.8.0",
     "socket.io": "^2.2.0"
   },
   "devDependencies": {
@@ -27,6 +28,7 @@
     "@types/koa-bodyparser": "^4.2.2",
     "@types/koa-router": "^7.0.40",
     "@types/mysql": "^2.15.5",
+    "@types/redis": "^2.8.12",
     "koa-bodyparser": "^3.2.0",
     "mysql": "^2.17.1",
     "nodemon": "^1.8.1"

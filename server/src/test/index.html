@@ -33,10 +33,15 @@
     <script>
         const socket = io.connect('http://localhost:3000')
         const loginBtn = document.querySelector(".login")
+        socket.on('login', (data) => {
+            console.log('汇报了')
+            console.log('data:', data)
+        })
         loginBtn.onclick = () => {
             console.log('执行点击事件')
             socket.emit('login', {
-                d: 11
+                username: '11',
+                password: '1'
             })
         }
     </script>

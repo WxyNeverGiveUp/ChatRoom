@@ -75,11 +75,14 @@ declare namespace mysqlTable {
 
 declare const enum AppCode {
     done = 0,
-    error = 1 // 发生异常
+    error = 1, // 程序异常
+    userExist = 1001, // 用户存在
+    loginError = 1002, // 用户名不存在或密码错误
 }
 
 declare const enum AppMsg {
     userExist = '用户名已经存在，请更换用户名',
+    loginError = '用户名不存在或密码错误',
     registerSuccess = '注册成功'
 }
 
@@ -95,12 +98,25 @@ declare namespace routeParams {
     namespace register {
         interface request {
             username: string,
+            password: string,
+            nickname: string,
+            level: number
+        }
+        interface response extends baseResponse {
+            data: null
+        }
+    }
+
+    /**
+     * 登录
+     */
+    namespace login {
+        interface request {
+            username: string,
             password: string
         }
-        interface response extends baseResponse{
-            data: {
-                isSuccess: boolean
-            }
+        interface response extends baseResponse {
+            data: null
         }
     }
 }
@@ -109,6 +125,24 @@ declare namespace Table {
     interface user {
         uid?: number, // 自动填充uid
         username: string,
-        password: string
+        password: string,
+        nickname: string,
+        level: number
     }
+}
+
+declare type username = string
+
+declare const enum messageType {
+    text = 1, // 纯文字 存储在redis中
+    picture = 2, // 纯图片 存储在磁盘中
+    textAndPicture = 3 // 混合 文字+图片，分开存储最后合并到一起
+}
+
+type message = {
+    id: number,
+    type: messageType
+    from: username,
+    to: username | null,
+    content: string,
 }

@@ -13,7 +13,7 @@ const serverConfig = config.server
  * Create HTTP server.
  */
 
-let server = http.createServer(app.callback());
+export let server = http.createServer(app.callback());
 
 /**
  * Listen on provided port, on all network interfaces.
@@ -36,7 +36,7 @@ makeRouter(app)
 /**
  * 监听socketserver
  */
-listenSocket(server)
+listenSocket()
 
 /**
  * Event listener for HTTP server "listening" event.
