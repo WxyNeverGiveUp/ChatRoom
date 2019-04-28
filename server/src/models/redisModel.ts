@@ -4,25 +4,25 @@ class CacheBase {
     public pre: string
     public key: string
     public fullKey: string
-    constructor(pre: string, key: string) {
-        this.pre = pre
-        this.key = key
-        this.fullKey = pre + '_' + key
+    constructor(CacheParams: {pre: string, key: string}) {
+        this.pre = CacheParams.pre
+        this.key = CacheParams.key
+        this.fullKey = this.pre + '_' + this.key
     }
     async delKey() {
         redisClient.del(this.fullKey)
     }
 }
 
-class CacheKeyVal extends CacheBase {
+export class CacheKeyVal extends CacheBase {
     public pre: string
     public key: string
     public fullKey: string
-    constructor(pre: string, key: string) {
-        super(pre, key)
-        this.pre = pre
-        this.key = key
-        this.fullKey = pre + key
+    constructor(CacheParams: {pre: string, key: string}) {
+        super(CacheParams)
+        this.pre = CacheParams.pre
+        this.key = CacheParams.key
+        this.fullKey = CacheParams.pre + CacheParams.key
     }
 
     /**
@@ -78,30 +78,16 @@ class CacheKeyVal extends CacheBase {
         })
         return result
     }
-}
-
-/**
- * hash类型
- */
-class CacheHash extends CacheBase {
-    public pre: string
-    public key: string
-    public fullKey: string
-    constructor(pre: string, key: string) {
-        super(pre, key)
-        this.pre = pre
-        this.key = key
-        this.fullKey = pre + '_' + key
-    }
 
     /**
-     * 获取一个hash类型的属性
-     * @param field 属性名
+     * 自增
+     * @param number 增加数
+     * @return [number] 自增后的值
      */
-    async getField(field: string): Promise<null | string> {
-        let result: string | null = null
+    async incrby(number = 1): Promise<number> {
+        let result = 0
         await new Promise((resolve, reject) => {
-            redisClient.hget(this.fullKey, field, (e, v) => {
+            redisClient.incrby(this.fullKey, number, (e, v) => {
                 if (e) {
                     console.log(e)
                     reject()
@@ -113,16 +99,55 @@ class CacheHash extends CacheBase {
         })
         return result
     }
+}
+
+/**
+ * hash类型
+ */
+export class CacheHash<T> extends CacheBase {
+    public pre: string
+    public key: string
+    public fullKey: string
+    constructor(CacheParams: {pre: string, key: string}) {
+        super(CacheParams)
+        this.pre = CacheParams.pre
+        this.key = CacheParams.key
+        this.fullKey = CacheParams.pre + '_' + CacheParams.key
+    }
+
+    /**
+     * 获取一个hash类型的属性
+     * @param field 属性名
+     */
+    async getField<T>(field: string): Promise<null | T> {
+        let result: T | null = null
+        await new Promise((resolve, reject) => {
+            redisClient.hget(this.fullKey, field, (e, v) => {
+                if (e) {
+                    reject()
+                } else { 
+                    try {
+                        result = JSON.parse(v)
+                        resolve()
+                    } catch (e) {
+                        reject()
+                    }
+                }
+            })
+        })
+        return result
+    }
 
     /**
      * 设置一个hash类型的属性
      * @param field 属性名
      * @param value 属性值
      */
-    async set(field: string, value: string): Promise<boolean> {
+    async setField(field: string, value: T): Promise<boolean> {
         let result: boolean = true
+        const str = JSON.stringify(value)
         await new Promise((resolve, reject) => {
-            redisClient.hset(this.fullKey, field, value, (e) => {
+            redisClient.hset(this.fullKey, field, str, (e) => {
                 if (e) {
                     result = false
                     console.log(e)
@@ -137,29 +162,177 @@ class CacheHash extends CacheBase {
 }
 
 /**
- * 数组模式
+ * 数组类型
  * @param pre 前缀 
  * @param key 键名
  */
-class CacheList extends CacheBase {
+export class CacheList<T> extends CacheBase {
     public pre: string
     public key: string
     public fullKey: string
-    constructor(pre: string, key: string) {
-        super(pre, key)
-        this.pre = pre
-        this.key = key
-        this.fullKey = pre + '_' + key
+    constructor(CacheParams: {pre: string, key: string}) {
+        super(CacheParams)
+        this.pre = CacheParams.pre
+        this.key = CacheParams.key
+        this.fullKey = CacheParams.pre + '_' + CacheParams.key
+    }
+
+    /**
+     * 插入一个值
+     * @param value 要插入的值
+     * @return [boolean] 是否插入成功
+     */
+    async push(value: T): Promise<boolean> {
+        let result: boolean = true
+        const str = JSON.stringify(value)
+        await new Promise((resolve, reject) => {
+            redisClient.rpush(this.fullKey, str, (e) => {
+                if (e) {
+                    result = false
+                    console.log(e)
+                    reject()
+                } else {
+                    resolve()
+                }
+            })
+        })
+        return result
+    }
+
+    /**
+     * 删除一个值
+     * @param value 要删除的值
+     * @return [boolean] 是否删除成功
+     */
+    async del(value: T): Promise<boolean> {
+        let result: boolean = true
+        const str = JSON.stringify(value)
+        await new Promise((resolve, reject) => {
+            redisClient.lrem(this.fullKey, 0, str, (e) => {
+                if (e) {
+                    result = false
+                    console.log(e)
+                    reject()
+                } else {
+                    resolve()
+                }
+            })
+        })
+        return result
+    }
+
+    async getAll(): Promise<T[]> {
+        let list: T[] = []
+        await new Promise((resolve, reject) => {
+            redisClient.lrange(this.fullKey, 0, -1, (e, v) => {
+                if (e) {
+                    console.log(e)
+                    reject()
+                } else {
+                    for (const tmp of v) {
+                        list.push(JSON.parse(tmp))
+                    }
+                    resolve()
+                }
+            })
+        })
+        return list
     }
 }
 
 /**
- * 工厂模式hash
- * @param pre 前缀
- * @param key 键名
+ * 集合类型
+ * @param CacheParams 
  */
-export function HashFactory(pre: string, key: string) {
-    return new CacheHash(pre, key)
+export class CacheSet<T> extends CacheBase {
+    public pre: string
+    public key: string
+    public fullKey: string
+    constructor(CacheParams: {pre: string, key: string}) {
+        super(CacheParams)
+        this.pre = CacheParams.pre
+        this.key = CacheParams.key
+        this.fullKey = CacheParams.pre + '_' + CacheParams.key
+    }
+
+    /**
+     * 添加
+     * @param value 集合的值
+     */
+    async add(value: T): Promise<boolean> {
+        let result: boolean = true
+        const str = JSON.stringify(value)
+        await new Promise((resolve, reject) => {
+            redisClient.sadd(this.fullKey, str, (e) => {
+                if (e) {
+                    result = false
+                    console.log(e)
+                    reject()
+                } else {
+                    resolve()
+                }
+            })
+        })
+        return result
+    }
+
+    /**
+     * 返回全部成员
+     */
+    async getAll(): Promise<T[]> {
+        let list: T[] = []
+        await new Promise((resolve, reject) => {
+            redisClient.smembers(this.fullKey, (e, v) => {
+                if (e) {
+                    console.log(e)
+                    reject()
+                } else {
+                    for (const tmp of v) {
+                        list.push(JSON.parse(tmp))
+                    }
+                    resolve()
+                }
+            })
+        })
+        return list
+    }
+
+    /**
+     * 删除部分成员
+     * @param values 部分成员 
+     */
+    async del(values: T[]) {
+        let result: boolean = true
+        const strs = values.map((item) => JSON.stringify(item))
+        await new Promise((resolve, reject) => {
+            redisClient.srem(this.fullKey, strs, (e) => {
+                if (e) {
+                    result = false
+                    console.log(e)
+                    reject()
+                } else {
+                    resolve()
+                }
+            })
+        })
+        return result
+    }
+}
+
+/**
+ * 集合模式hash
+ * @param CacheParams
+ */
+export function SetFactory<T>(CacheParams: {pre: string, key: string}) {
+    return new CacheSet<T>(CacheParams)
+}
+
+/**
+ * 工厂模式hash
+ * @param CacheParams
+ */
+export function HashFactory<T>(CacheParams: {pre: string, key: string}) {
+    return new CacheHash<T>(CacheParams)
 }
 
 /**
@@ -167,10 +340,10 @@ export function HashFactory(pre: string, key: string) {
  * @param pre 前缀
  * @param key 键名
  */
-export function KeyValFactory(pre: string, key: string) {
-    return new CacheKeyVal(pre, key)
+export function KeyValFactory(CacheParams: {pre: string, key: string}) {
+    return new CacheKeyVal(CacheParams)
 }
 
-export function ListFactory(pre: string, key: string) {
-    return new CacheList(pre, key)
+export function ListFactory<T>(CacheParams: {pre: string, key: string}) {
+    return new CacheList<T>(CacheParams)
 }

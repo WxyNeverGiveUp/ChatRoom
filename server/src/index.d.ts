@@ -132,6 +132,7 @@ declare namespace Table {
 }
 
 declare type username = string
+declare type all = 'all'
 
 declare const enum messageType {
     text = 1, // 纯文字 存储在redis中
@@ -143,6 +144,19 @@ type message = {
     id: number,
     type: messageType
     from: username,
-    to: username | null,
+    to: username | all,
     content: string,
+    url?: string[]
+}
+
+/**
+ * 缓存数据键名
+ */
+declare const enum cacheKey {
+    k_roomId = 'k_roomId_', // 聊天室counter
+    h_username_room_msg = 'h_username_room_msg', // 用户消息
+    h_roomName_id = 'h_roomName_id_', // 聊天室名对应的id号
+    s_username_roomId = 's_username_roomId_', // 用户曾加入过的聊天室
+    k_room_messageCounter = 'k_room_messageCounter_', // 聊天室消息记录
+    l_room_msg = 'l_room_msg_', // 聊天室消息队列
 }

@@ -37,6 +37,8 @@ export async function login(req: routeParams.login.request, socket: socket.Serve
     }
     if (!userInfo || userInfo.password !== req.password + '') {
         retdata.code = AppCode.loginError
+    } else {
+        // 登陆成功，在长连接上挂在一个实例
     }
     await socketSend<routeParams.login.response>(socket, socketEvents.login, retdata)
     return
