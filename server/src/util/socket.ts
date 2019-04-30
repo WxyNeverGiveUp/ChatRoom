@@ -1,13 +1,6 @@
 import * as socket from 'socket.io'
 
 /**
- * socket事件名
- */
-export const enum socketEvents {
-    login = 'login', // 登录
-}
-
-/**
  * 聊天室名称
  */
 export const enum roomName {
@@ -19,5 +12,16 @@ export const enum roomName {
  * @param socket 
  */
 export async function socketSend<T>(socket: socket.Server, event: socketEvents, data: T) {
-    socket.emit(event, data)
+    await socket.emit(event, data)
+}
+
+/**
+ * 指定客户端回包
+ */
+export async function socketPrivateSend<T>(socket: socket.Server, event: socketEvents, socketId: string, data: T) {
+    await socket.to(socketId).emit(event, data)
+}
+
+export async function socketBroadcast<T>(socket: socket.Socket, event: socketEvents, data: T) {
+    await socket.broadcast.emit(event, data)
 }

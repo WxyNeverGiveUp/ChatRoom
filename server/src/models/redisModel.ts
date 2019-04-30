@@ -119,8 +119,8 @@ export class CacheHash<T> extends CacheBase {
      * 获取一个hash类型的属性
      * @param field 属性名
      */
-    async getField<T>(field: string): Promise<null | T> {
-        let result: T | null = null
+    async getField(field: string): Promise<T> {
+        let result: T
         await new Promise((resolve, reject) => {
             redisClient.hget(this.fullKey, field, (e, v) => {
                 if (e) {

@@ -1,16 +1,16 @@
-import * as socket from 'socket.io';
-import { io } from '../websocket/socket';
 import { roomName } from '../util/socket';
 import { KeyValFactory, CacheKeyVal, CacheHash, HashFactory, CacheList, ListFactory } from './redisModel';
 import { config } from '../config/config';
+import { io } from '../app'
 
 /**
  * 全部聊天室管理类
  */
-class RoomManager {
+export class RoomManager {
     private id: CacheKeyVal // 聊天室唯一ID
     private roomName: CacheHash<number> // 房间名字
     public rooms: Map<number, Room>
+    public roomsIdMap: Map<string, number> // 房间名字对应的roomId
     constructor() {
         this.id = KeyValFactory({
             pre: config.server.mount, 
@@ -20,7 +20,8 @@ class RoomManager {
             pre: config.server.mount,
             key: cacheKey.h_roomName_id
         })
-
+        this.rooms = new Map()
+        this.roomsIdMap = new Map()
     }
 
     /**
@@ -31,16 +32,26 @@ class RoomManager {
     }
 
     /**
+     * 获取房间名称
+     * @param users 用户
+     * @return [string] 房间吗
+     */
+    getRoomName(users: username[]) {
+        return users.sort().join(',')
+    }
+
+    /**
      * 新建一个私聊房间
      * @param users 用户
      */
     async createRoom(users: username[]) {
         const id = await this.id.incrby(),
-            name = users.join(',')
+            name = this.getRoomName(users)
         console.log(`新建房间:${name},id:${id}`)
         await this.roomName.setField(name, id)
         const room = new Room(name, id)
         this.rooms.set(id, room)
+        this.roomsIdMap.set(name, id)
         return room
     }
 
@@ -54,6 +65,15 @@ class RoomManager {
         return room
     }
 
+    /**
+     * 获取用房间id
+     * @param users 用户
+     */
+    getRoomId(users: username[]) {
+        const name = this.getRoomName(users)
+        return this.roomsIdMap.get(name)
+    }
+    
     /**
      * 获取指定聊天室
      * @param roomId 聊天室Id
@@ -70,15 +90,15 @@ class RoomManager {
 class Room {
     private id: number // 唯一Id
     private roomName: string
-    private onlineCounter: number
-    private onlineList: username[]
+    private onlineList: Set<username>
+    private members: Set<username>
     private messageList: CacheList<message>
     private messageCounter: CacheKeyVal // 聊天室消息缓存
     constructor(roomName: string, id: number) {
         this.roomName = roomName
         this.id = id
-        this.onlineCounter = 0
-        this.onlineList = []
+        this.onlineList = new Set()
+        this.members = new Set()
         this.messageCounter = KeyValFactory({
             pre: config.server.mount,
             key: cacheKey.k_room_messageCounter
@@ -90,63 +110,80 @@ class Room {
     }
 
     /**
+     * 上线
+     * @param user 用户名 
+     */
+    online(user: username) {
+        this.onlineList.add(user)
+        return
+    }
+
+    /**
+     * 离线
+     * @param user 用户名
+     */
+    offline(user: username) {
+        this.onlineList.delete(user)
+    }
+
+    /**
      * 用户进入聊天室
      * @param username 用户名
      */
-    enter(username: username): boolean {
-        if (this.onlineList.includes(username)) {
-            return false
-        } else {
-            this.onlineCounter++
-            this.onlineList.push(username)
-            return true
-        }
+    join(user: username) {
+        this.members.add(user)
+        this.onlineList.add(user)
     }
 
     /**
      * 用户离开聊天室
      * @param username 用户名
      */
-    leave(username: username): boolean {
-        let index = this.onlineList.indexOf(username)
-        if (index > -1) {
-            this.onlineList.splice(index, 1)
-            this.onlineCounter--
-            if (this.onlineCounter < 0) {
-                this.onlineCounter = 0
-            }
-            return true
-        } else {
-            return false
-        }
+    leave(user: username) {
+        this.members.delete(user)
+        this.onlineList.delete(user)
     }
 
     /**
      * 获取当前在线人数
      */
-    getCounter(): number {
-        return this.onlineCounter
+    getOnlineCounter(): number {
+        return this.onlineList.size
     }
 
     /**
      * 获取当前在线列表
      */
-    getList(): string[] {
-        return this.onlineList
+    getOnlineList(): string[] {
+        return Array.from(this.onlineList)
+    }
+
+    /**
+     * 获取该聊天室成员
+     */
+    getMemebers(): string[] {
+        return Array.from(this.members)
     }
 
     /**
      * 获取当前聊天室名称
      */
-    getRoomName(): string {
+    getName(): string {
         return this.roomName
     }
 
     /**
      * 获取当前聊天室Id
      */
-    getRoomId(): number {
+    getId(): number {
         return this.id
+    }
+
+    /**
+     * 获取房间名
+     */
+    getNameEvent() {
+        return 'room' + this.getId()
     }
 
     /**
@@ -157,7 +194,12 @@ class Room {
         await this.messageCounter.incrby()
         this.messageList.push(msg)
     }
-}
 
-export const roomManager = new RoomManager()
-export const publicRoom = roomManager.createPublicRoom()
+    /**
+     * 房间内发送消息
+     * @param msg 消息
+     */
+    async sendMessage(msg: message) {
+        io.to(this.getNameEvent()).emit(socketEvents.newMsg, msg)
+    }
+}

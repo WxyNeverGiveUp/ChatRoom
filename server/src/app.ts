@@ -1,10 +1,12 @@
 import * as Koa from 'koa'
 import * as http from 'http'
 import * as bodyparser from "koa-bodyparser"
+import * as socket from 'socket.io'
 import { config } from "./config/config"
 import { makeRouter } from './util/route'
 import { logger } from './lib/baseMid'
 import { listenSocket } from './websocket/socket';
+import { RoomManager } from './models/chatRoom';
 
 export const app = new Koa()
 const serverConfig = config.server
@@ -13,7 +15,8 @@ const serverConfig = config.server
  * Create HTTP server.
  */
 
-export let server = http.createServer(app.callback());
+const server = http.createServer(app.callback());
+export const io = socket.listen(server)
 
 /**
  * Listen on provided port, on all network interfaces.
@@ -34,9 +37,15 @@ app.use(bodyparser())
 makeRouter(app)
 
 /**
- * 监听socketserver
+ * 监听socket事件
  */
-listenSocket()
+listenSocket(io)
+
+/**
+ * 创造聊天室实例
+ */
+export const roomManager = new RoomManager()
+export const publicRoom = roomManager.createPublicRoom()
 
 /**
  * Event listener for HTTP server "listening" event.

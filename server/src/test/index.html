@@ -12,9 +12,8 @@
     <h1 class="mod">多人实时聊天室(公共聊天区)</h1>
     <div class="mod clearfix">
         请输入用户名：
-        <input id="username" type="text">
-        <input id="btnLogin" type="button" value="登录" class="btn btn-info">
-        <input id="btnLogout" type="button" value="退出登录" class="btn btn-danger">
+        <input id="username" type="text"> 受邀请的房号
+        <input id="private" type="text">
     </div>
     <div class="main">
         <div class="left">
@@ -24,24 +23,75 @@
             <div class="edit">
                 <span>您要发送的内容：</span>
                 <textarea name="msg" id="msg" cols="30" rows="10"></textarea>
-                <input id="btnSend" type="button" value="发送" class="btn btn-info">
             </div>
         </div>
     </div>
     <button type="button" class="login">登录</button>
+    <button type="button" class="join">进入公共聊天室</button>
+    <button type="button" class="leave">离开公共聊天室</button>
+    <button type="button" class="invite">建立私聊</button>
+    <button type="button" class="receive">接受私聊</button>
+    <button type="button" class="send">发送消息</button>
     <script src="./javascripts/socket.io.js"></script>
     <script>
         const socket = io.connect('http://localhost:3000')
         const loginBtn = document.querySelector(".login")
+        const joinBtn = document.querySelector(".join")
+        const leaveBtn = document.querySelector(".leave")
+        const sendMsgBtn = document.querySelector('.send')
+        const inviteBtn = document.querySelector('.invite')
+        const username = document.getElementById("username")
+        const privateRoomId = document.getElementById("private")
+        const msg = document.getElementById("msg")
         socket.on('login', (data) => {
             console.log('汇报了')
             console.log('data:', data)
         })
+        socket.on('sendMsg', (data) => {
+            console.log('收到消息了')
+            console.log(data)
+        })
+        socket.on('newInvite', (data) => {
+            console.log(data)
+            if (username.value === data.data.invite.to) {
+                privateRoomId.value = data.data.invite.roomId
+                socket.emit('receiveInvite', {
+                    roomId: privateRoomId.value,
+                    user: username.value
+                })
+            }
+        })
         loginBtn.onclick = () => {
-            console.log('执行点击事件')
             socket.emit('login', {
-                username: '11',
-                password: '1'
+                username: username.value,
+                password: '1',
+                socketId: socket.id
+            })
+        }
+        joinBtn.onclick = () => {
+            console.log('进入', username)
+            socket.emit('join', {
+                username: username.value,
+                roomId: 0
+            })
+        }
+        leaveBtn.onclick = () => {
+            console.log('离开')
+            socket.emit('leave', {
+                username: username.value,
+                roomId: 0
+            })
+        }
+        sendMsgBtn.onclick = () => {
+            console.log('发送消息')
+            socket.emit('sendMsg', {
+                message: {
+                    from: username.value,
+                    content: msg.value,
+                    id: 1,
+                    type: 1,
+                    to: '11'
+                }
             })
         }
     </script>
