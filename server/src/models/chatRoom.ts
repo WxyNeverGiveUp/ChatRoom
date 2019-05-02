@@ -2,6 +2,7 @@ import { roomName } from '../util/socket';
 import { KeyValFactory, CacheKeyVal, CacheHash, HashFactory, CacheList, ListFactory } from './redisModel';
 import { config } from '../config/config';
 import { io } from '../app'
+import { Chatter } from './chatter';
 
 /**
  * 全部聊天室管理类
@@ -10,7 +11,7 @@ export class RoomManager {
     private id: CacheKeyVal // 聊天室唯一ID
     private roomName: CacheHash<number> // 房间名字
     public rooms: Map<number, Room>
-    public roomsIdMap: Map<string, number> // 房间名字对应的roomId
+    public privateRoomsIdMap: Map<string, number> // 私聊房间名字对应的roomId
     constructor() {
         this.id = KeyValFactory({
             pre: config.server.mount, 
@@ -21,14 +22,13 @@ export class RoomManager {
             key: cacheKey.h_roomName_id
         })
         this.rooms = new Map()
-        this.roomsIdMap = new Map()
+        this.privateRoomsIdMap = new Map()
     }
 
     /**
      * reload重启服务时 重载所有聊天室
      */
     async reload() {
-
     }
 
     /**
@@ -41,7 +41,7 @@ export class RoomManager {
     }
 
     /**
-     * 新建一个私聊房间
+     * 新建一个房间
      * @param users 用户
      */
     async createRoom(users: username[]) {
@@ -51,7 +51,9 @@ export class RoomManager {
         await this.roomName.setField(name, id)
         const room = new Room(name, id)
         this.rooms.set(id, room)
-        this.roomsIdMap.set(name, id)
+        if (users.length === 2) { // 2个人说明是私聊房间
+            this.privateRoomsIdMap.set(name, id)
+        }
         return room
     }
 
@@ -66,12 +68,12 @@ export class RoomManager {
     }
 
     /**
-     * 获取用房间id
+     * 获取私聊房间id
      * @param users 用户
      */
-    getRoomId(users: username[]) {
+    getPrivateRoomId(users: username[]) {
         const name = this.getRoomName(users)
-        return this.roomsIdMap.get(name)
+        return this.privateRoomsIdMap.get(name)
     }
     
     /**
@@ -79,7 +81,7 @@ export class RoomManager {
      * @param roomId 聊天室Id
      */
     getRoom(roomId: number) {
-        return this.rooms.get(roomId)
+        return this.rooms.get(Number(roomId))
     }
 }
 
@@ -124,6 +126,7 @@ class Room {
      */
     offline(user: username) {
         this.onlineList.delete(user)
+        return
     }
 
     /**
@@ -201,5 +204,10 @@ class Room {
      */
     async sendMessage(msg: message) {
         io.to(this.getNameEvent()).emit(socketEvents.newMsg, msg)
+        for (const member of this.members) {
+            if (member != msg.from) {
+                await Chatter.addUnreadMsg(member, msg)
+            }
+        }
     }
 }

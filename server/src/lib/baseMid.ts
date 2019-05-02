@@ -11,7 +11,7 @@ export async function logger(ctx: Koa.Context, next: Function) {
             console.log(ctx.query.data)
             ctx.query.data = JSON.parse(ctx.query.data)
         } catch(e) {
-            console.error('数据格式错误！')
+            console.error('数据格式错误')
             ctx.body = {
                 code: AppCode.done
             }
@@ -20,6 +20,7 @@ export async function logger(ctx: Koa.Context, next: Function) {
     try {
         await next()
     } catch (e) {
+        console.log('发生错误===>')
         console.log(e)
         ctx.body = {
             code: AppCode.error

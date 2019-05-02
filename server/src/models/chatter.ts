@@ -7,6 +7,7 @@ class ChatterManager {
     public socketIdMap: Map<string, username> // socketId 对应的username
     constructor (){
         this.chatters = new Map()
+        this.socketIdMap = new Map()
     }
 
     /**
@@ -31,20 +32,59 @@ class ChatterManager {
      * @param username 用户名
      */
     getChatter(username: username): Chatter {
-        const chatter = this.chatters.get(username)
-        return chatter
+        return this.chatters.get(username)
     }
 
     /**
      * 清除聊天者
      * @param socketId socket连接ID
      */
-    delChatter (socketId: string) {
-        const name = this.socketIdMap.get(socketId)
-        if (name) {
+    delChatter (user: username) {
+        const chatter = this.chatters.get(user)
+        if (chatter) {
+            const name = chatter.getName()
             this.chatters.delete(name)
+            const socketId = chatter.getSocketId()
             this.socketIdMap.delete(socketId)
         }
+    }
+
+    /**
+     * 聊天用户上线所有房间
+     * @param user 用户名
+     */
+    async onlineRooms (user: username) {
+        const chatter = this.chatters.get(user)
+        const roomIds = await chatter.getRooms()
+        for (const roomId of roomIds) {
+            const room = roomManager.getRoom(roomId)
+            if (room) {
+                room.online(user)
+            }
+        }
+    }
+
+    /**
+     * 用户离开所有房间
+     * @param user 用户名 
+     */
+    async outlineRooms (user: username) {
+        const chatter = this.chatters.get(user)
+        const roomIds = await chatter.getRooms()
+        for (const roomId of roomIds) {
+            const room = roomManager.getRoom(roomId)
+            if (room) {
+                room.offline(user)
+            }
+        }
+    }
+
+    /**
+     * 通过socketId获取姓名
+     * @param socketId socketId
+     */
+    socket2name (socketId: string) {
+        return this.socketIdMap.get(socketId)
     }
 }
 
@@ -113,7 +153,7 @@ export class Chatter {
      */
     async getUnreadMsg(roomId: number): Promise<message[]> {
         const msgList = await this.roomMsg.getField(roomId + '')
-        return msgList
+        return msgList || []
     }
 
     /**
@@ -144,25 +184,6 @@ export class Chatter {
     }
 
     /**
-     * 发送消息
-     * @param roomId 聊天室ID
-     * @param messageId 消息ID
-     */
-    sendMessage(roomId: number, message: message) {
-        let room = roomManager.getRoom(roomId)
-        console.log(room)
-        console.log(message)
-    }
-
-    /**
-     * 获取未读信息
-     * @param roomId 聊天室Id
-     */
-    getUnreadMessage(roomId: number) {
-        console.log(roomId)
-    }
-
-    /**
      * 获取聊天室
      */
     async getRooms(): Promise<number[]> {
@@ -172,9 +193,19 @@ export class Chatter {
     /**
      * 加入聊天室
      */
-    joinRoom(roomId: number) {
+    async joinRoom(roomId: number) {
         const room = roomManager.getRoom(roomId)
-        console.log(room)
+        room.join(this.username)
+        await this.roomSet.add(roomId)
+    }
+
+    /**
+     * 离开聊天室
+     */
+    async leaveRoom(roomId: number) {
+        const room = roomManager.getRoom(roomId)
+        room.leave(this.username)
+        await this.roomSet.del([roomId])
     }
 
 }

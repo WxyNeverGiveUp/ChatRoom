@@ -1,7 +1,9 @@
-import { login, join, leave, sendMsg } from '../controller/index';
+import { join, leave, sendMsg } from '../controller/chat';
+import { login } from '../controller/index';
 import * as socket from 'socket.io'
 import { roomManager, publicRoom } from '../app';
 import { socketPrivateSend, socketBroadcast } from '../util/socket';
+import { chatterManager } from '../models/chatter';
 
 export function listenSocket(io: socket.Server) {
     /**
@@ -12,13 +14,14 @@ export function listenSocket(io: socket.Server) {
          * 用户登录
          */
         socket.on(socketEvents.login, async (req: routeParams.login.request) => {
+            chatterManager.createChatter(req.username, socket.id)
             const retData = await login(req)
             await socketPrivateSend<routeParams.login.response>(io, socketEvents.login, socket.id, retData)
-            if (retData.code === AppCode.done) { // 登录成功加入public聊天室
-                publicRoom.join(req.username)
+            if (retData.code === AppCode.done) { 
                 socket.join(publicRoom.getNameEvent())
             }
         })
+
         /**
          * 用户加入聊天室
          */
@@ -26,17 +29,17 @@ export function listenSocket(io: socket.Server) {
             const room = roomManager.getRoom(req.roomId)
             socket.join(room.getNameEvent())
             const retData = await join(req)
-            await socketPrivateSend<routeParams.join.response>(io, socketEvents.join, req.username, retData)
+            await socketPrivateSend<routeParams.join.response>(io, socketEvents.join, req.user, retData)
         })
 
         /**
          * 用户离开聊天室
          */
-        socket.on(socketEvents.leave, async (req: routeParams.join.request) =>{
+        socket.on(socketEvents.leave, async (req: routeParams.leave.request) =>{
             const room = roomManager.getRoom(req.roomId)
             socket.leave(room.getNameEvent())
             const retData = await leave(req)
-            await socketPrivateSend<routeParams.leave.response>(io, socketEvents.leave, req.username, retData)
+            await socketPrivateSend<routeParams.leave.response>(io, socketEvents.leave, req.user, retData)
         })
 
         /**
@@ -44,18 +47,19 @@ export function listenSocket(io: socket.Server) {
          */
         socket.on(socketEvents.sendMsg, async (req: routeParams.sendMsg.request) => {
             /**
-             * 说不是面向所有人则代表是明时私聊
+             * to某个人 私聊
              */
             if (req.message.to !== chatConst.messageToAll) {
                 const users = [req.message.from, req.message.to]
-                let roomId = roomManager.getRoomId(users)
+                let roomId = roomManager.getPrivateRoomId(users)
                 /**
                  * 如果没有私聊房间则先发出私聊请求
                  */
                 if (!roomId) {
-                    const newRoom = await roomManager.createRoom(users)
+                    const newRoom = await roomManager.createRoom(users),
+                        fromUser = chatterManager.getChatter(req.message.from) 
                     socket.join(newRoom.getNameEvent())
-                    newRoom.join(req.message.from)
+                    fromUser.joinRoom(newRoom.getId())
                     /**
                      * 发送邀请
                      */
@@ -73,29 +77,29 @@ export function listenSocket(io: socket.Server) {
                     /**
                      * 有房间的话直接发送消息
                      */
-                    const room = roomManager.getRoom(roomId)
-                    await room.sendMessage(req.message)
+                    const retData = await sendMsg(req)
+                    await socketPrivateSend<routeParams.sendMsg.response>(io, socketEvents.sendMsg, req.message.from, retData)
                 }
-            }
-            const retData = await sendMsg(req)
-            await socketPrivateSend<routeParams.sendMsg.response>(io, socketEvents.sendMsg, req.message.from, retData)
-        })
-
-        /**
-         * 接受邀请
-         */
-        socket.on(socketEvents.receiveInvite, async (req: routeParams.receiveInvite.request) => {
-            const room = roomManager.getRoom(Number(req.roomId))
-            socket.join(room.getNameEvent())
-            room.join(req.user)
+            } else {
+                // to所有人 群聊
+                // 直接向聊天室广播
+                await sendMsg(req)
+            }         
         })
 
         /**
          * 断线 事件监听
          */
-        socket.on('disconnect', () =>{
-            io.sockets.emit('leave', {})
-            console.log(socket.id, '离开了')
+        socket.on('disconnect', async () =>{
+            const name = chatterManager.socket2name(socket.id)
+            if (name) {
+                await chatterManager.outlineRooms(name)
+                await chatterManager.delChatter(name)
+                io.sockets.emit(socketEvents.leave, {
+                    username: name
+                })
+                console.log(`【${name}】离开了`)
+            }
         })
     })
 }

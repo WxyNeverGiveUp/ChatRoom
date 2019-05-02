@@ -43,23 +43,25 @@
         const username = document.getElementById("username")
         const privateRoomId = document.getElementById("private")
         const msg = document.getElementById("msg")
-        socket.on('login', (data) => {
+        socket.on('login', (res) => {
             console.log('汇报了')
-            console.log('data:', data)
+            console.log('data:', res)
         })
-        socket.on('sendMsg', (data) => {
-            console.log('收到消息了')
-            console.log(data)
+        socket.on('sendMsg', (res) => {
+            console.log('发送消息了')
+            console.log(res)
         })
-        socket.on('newInvite', (data) => {
-            console.log(data)
-            if (username.value === data.data.invite.to) {
-                privateRoomId.value = data.data.invite.roomId
-                socket.emit('receiveInvite', {
+        socket.on('newInvite', (res) => {
+            if (username.value === res.data.invite.to) {
+                privateRoomId.value = res.data.invite.roomId
+                socket.emit('join', {
                     roomId: privateRoomId.value,
                     user: username.value
                 })
             }
+        })
+        socket.on('newMsg', (res) => {
+
         })
         loginBtn.onclick = () => {
             socket.emit('login', {
@@ -90,7 +92,8 @@
                     content: msg.value,
                     id: 1,
                     type: 1,
-                    to: '11'
+                    to: '11',
+                    roomId: Number(privateRoomId.value)
                 }
             })
         }

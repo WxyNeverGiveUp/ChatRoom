@@ -1,8 +1,12 @@
 import { Route } from "../util/route"
-import { register } from "../controller/index"
+import { register, getMembers } from "../controller/index"
 
 export = [new Route({
-    cmd:'register',
+    cmd: 'register',
     handler: [register],
-    method: "post"
+    method: 'post'
+}), new Route({
+    cmd: 'getMembers',
+    handler: [getMembers],
+    method: 'get'
 })]

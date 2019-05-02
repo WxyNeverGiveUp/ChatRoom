@@ -1,6 +1,6 @@
 import * as Koa from 'koa';
 import { userModel } from '../models/userModel';
-import { publicRoom } from '../app';
+import { publicRoom, roomManager } from '../app';
 import { chatterManager } from '../models/chatter';
 
 /**
@@ -26,6 +26,31 @@ export async function register(ctx: Koa.Context) {
 }
 
 /**
+ * 查看当前用户
+ * http请求
+ */
+export async function getMembers(ctx: Koa.Context) {
+    const req: routeParams.getMembers.request = ctx.query
+    let retData: routeParams.getMembers.response = {
+        code: AppCode.done,
+        data: {
+            members: [],
+            onlineList: []
+        }
+    }
+    const room = roomManager.getRoom(req.roomId)
+    if (room) {
+        retData.data.members = room.getMemebers()
+        retData.data.onlineList = room.getOnlineList()
+    } else {
+        retData.msg = AppMsg.roomNotExist
+        retData.code = AppCode.roomNotExist
+    }
+    ctx.body = retData
+    return
+}
+
+/**
  * 登录
  * 建立websocket连接
  */
@@ -34,7 +59,8 @@ export async function login(req: routeParams.login.request) {
     let retdata: routeParams.login.response = {
         code: AppCode.done,
         data: {
-            username: req.username
+            username: req.username,
+            rooms: []
         }
     }
     if (!userInfo || userInfo.password !== req.password + '') {
@@ -42,71 +68,25 @@ export async function login(req: routeParams.login.request) {
     } else {
         console.log(`【${req.username}】登陆了`)
         // 创建一个聊天者实例
-        chatterManager.createChatter(req.username, req.socketId)
+        const user = chatterManager.getChatter(req.username)
+        await user.joinRoom(publicRoom.getId())
+
         // 默认加入公共聊天室
-        publicRoom.sendMessage({
-            id: 1,
-            content: '公共聊天室消息',
-            type: messageType.text,
-            from: req.username,
-            roomId: 0,
-            to: chatConst.messageToAll
-        })
+        const roomIds = await user.getRooms()
+        if (roomIds.length > 0) {
+            for (const roomId of roomIds) {
+                const room = roomManager.getRoom(roomId)
+                const msgs = await user.getUnreadMsg(roomId)
+                if (room) {
+                    retdata.data.rooms.push({
+                        roomId: room.getId(),
+                        members: room.getMemebers(),
+                        msgs
+                    })
+                }
+            }
+        }
     }
     return retdata
-}
-
-/**
- * 进入房间
- */
-export async function join(req: routeParams.join.request) {
-    let retData: routeParams.join.response = {
-        code: AppCode.done,
-        data: null
-    }
-    publicRoom.join(req.username)
-    console.log(`【${req.username}】加入房间：【${req.roomId}】`)
-    console.log(`当前房间用户有:${publicRoom.getMemebers().join(',')}`)
-    return retData
-}
-
-/**
- * 离开房间
- */
-export async function leave(req: routeParams.leave.request){
-    let retData: routeParams.leave.response = {
-        code: AppCode.done,
-        data: null
-    }
-    publicRoom.leave(req.username)
-    console.log(`【${req.username}】离开房间：【${req.roomId}】`)
-    console.log(`当前房间用户有:${publicRoom.getMemebers().join(',')}`)
-    return retData
-}
-
-/**
- * 发送消息
- */
-export async function sendMsg(req: routeParams.sendMsg.request){
-    let retData: routeParams.sendMsg.response = {
-        code: AppCode.done,
-        data: null
-    }
-    await publicRoom.sendMessage(req.message)
-    console.log(`【${req.message.from}】发送消息：【${req.message.content}】`)
-    console.log(`当前房间用户有:${publicRoom.getMemebers().join(',')}`)
-    return retData
-}
-
-/**
- * 退出
- */
-export async function logout(req: routeParams.logout.request) {
-    let retData: routeParams.logout.response = {
-        code: AppCode.done,
-        data: null
-    }
-    await chatterManager.delChatter(req.socketId)
-    return retData
 }
 

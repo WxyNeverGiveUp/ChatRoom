@@ -78,11 +78,13 @@ declare const enum AppCode {
     error = 1, // 程序异常
     userExist = 1001, // 用户存在
     loginError = 1002, // 用户名不存在或密码错误
+    roomNotExist = 1003, // 该房间不存在
 }
 
 declare const enum AppMsg {
     userExist = '用户名已经存在，请更换用户名',
     loginError = '用户名不存在或密码错误',
+    roomNotExist = '该房间不存在',
     registerSuccess = '注册成功'
 }
 
@@ -108,6 +110,21 @@ declare namespace routeParams {
     }
 
     /**
+     * 获取当前用户
+     */
+    namespace getMembers {
+        interface request {
+            roomId: number
+        }
+        interface response extends baseResponse {
+            data: {
+                members: username[],
+                onlineList: username[]
+            }
+        }
+    }
+
+    /**
      * 登录
      */
     namespace login {
@@ -118,7 +135,12 @@ declare namespace routeParams {
         }
         interface response extends baseResponse {
             data: {
-                username: username
+                username: username,
+                rooms: {
+                    roomId: number,
+                    members: username[],
+                    msgs: message[]
+                }[]
             }
         }
     }
@@ -129,7 +151,7 @@ declare namespace routeParams {
     namespace join {
         interface request {
             roomId: number,
-            username: username
+            user: username
         }
         interface response extends baseResponse {
             data: null
@@ -142,7 +164,9 @@ declare namespace routeParams {
     namespace leave {
         type request = join.request
         interface response extends baseResponse {
-            data: null
+            data: {
+                invite: invite                
+            }
         }
     }
 
@@ -176,7 +200,7 @@ declare namespace routeParams {
     }
 
     /**
-     * 发送邀请
+     * 发送群聊邀请
      */
     namespace sendInvite {
         type request = invite
@@ -201,27 +225,6 @@ declare namespace routeParams {
             }
         } 
     }
-
-    /**
-     * 接受新邀请
-     */
-    namespace receiveInvite {
-        interface request {
-            roomId: number,
-            user: username
-        }
-
-        interface response extends baseResponse {
-            data: {
-                invite: invite
-            }
-        } 
-    }
-
-
-    /**
-     * 邀请
-     */
 
     /**
      * 退出登录
@@ -301,5 +304,4 @@ declare const enum socketEvents {
     newMsg = 'newMsg', // 发现新消息的回包
     sendInvite = 'sendInvite', // 发送邀请
     newInvite = 'newInvite', // 发生新邀请事件
-    receiveInvite = 'receiveInvite', // 接受邀请
 }
