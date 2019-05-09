@@ -79,13 +79,15 @@ declare const enum AppCode {
     userExist = 1001, // 用户存在
     loginError = 1002, // 用户名不存在或密码错误
     roomNotExist = 1003, // 该房间不存在
+    activityNotExist = 1004, // 该房间不存在
 }
 
 declare const enum AppMsg {
     userExist = '用户名已经存在，请更换用户名',
     loginError = '用户名不存在或密码错误',
     roomNotExist = '该房间不存在',
-    registerSuccess = '注册成功'
+    registerSuccess = '注册成功',
+    activityNotExist = '该活动不存在',
 }
 
 interface baseResponse {
@@ -136,9 +138,14 @@ declare namespace routeParams {
         interface response extends baseResponse {
             data: {
                 username: username,
+                level: number,
                 rooms: {
                     roomId: number,
-                    members: username[],
+                    members: {
+                        isOnline: boolean,
+                        name: username,
+                        img: string
+                    }[],
                     msgs: message[]
                 }[]
             }
@@ -238,15 +245,96 @@ declare namespace routeParams {
             data: null
         }
     }
+
+    /**
+     * 获取活动咨询
+     */
+    namespace getActivities {
+        interface request {}
+
+        interface response extends baseResponse {
+            data: {
+                list: {
+                    id: number, 
+                    title: string,
+                    createTime: timestamp, 
+                    endTime: timestamp, 
+                    beginTime: timestamp
+                }[]
+            }
+        }
+    }
+
+    /**
+     * 增添活动
+     */
+    namespace addActivitiy {
+        interface request {
+            title: string, // 文章标题
+            content: string, // 文章内容
+            author: string, // 作者
+            beginTime: timestamp, // 开始时间
+            endTime: timestamp, // 结束时间
+        }
+
+        interface response extends baseResponse {
+            data: null
+        }
+    }
+
+    /**
+     * 删除活动
+     */
+    namespace delActivitiy {
+        interface request {
+            id: number
+        }
+
+        interface response extends baseResponse {
+            data: null
+        }
+    }
+
+    /**
+     * 获取详情
+     */
+    namespace getActivityDetail {
+        interface request {
+            id: number
+        }
+
+        interface response extends baseResponse {
+            data: {
+                activity: {
+                    id: number,
+                    title: string,
+                    content: string,
+                    author: string,
+                    createTime: timestamp,
+                    beginTime: timestamp,
+                    endTime: timestamp
+                }
+            }
+        }
+    }
 }
 
 declare namespace Table {
     interface user {
-        uid?: number, // 自动填充uid
+        id?: number, // 自动填充id
         username: string,
         password: string,
         nickname: string,
         level: number
+    }
+    interface activity {
+        id?: number, // 自动填充id
+        title: string, // 文章标题
+        content: string, // 文章内容
+        author: string, // 作者
+        create_time: Date, // 发布时间
+        begin_time: Date, // 开始时间
+        end_time: Date, // 结束时间
     }
 }
 
@@ -262,7 +350,9 @@ declare const enum messageType {
     textAndPicture = 3 // 混合 文字+图片，分开存储最后合并到一起
 }
 
-type message = {
+declare type timestamp = number
+
+declare type message = {
     roomId?: number, // 该消息是在哪个房间中
     id: number,
     type: messageType
@@ -275,10 +365,16 @@ type message = {
 /**
  * 群聊邀请
  */
-type invite = {
+declare type invite = {
     roomId: number,
     from: username,
     to: username
+}
+
+declare const enum userLevel {
+    visitor = 0, // 普通社团成员
+    admin = 1, // 社团管理员
+    spuerAdmin = 2 // 超级管理员
 }
 
 /**
@@ -298,10 +394,15 @@ declare const enum cacheKey {
  */
 declare const enum socketEvents {
     login = 'login', // 登录
+    otherLogin = 'otherLogin', // 其他用户登录
     join = 'join', // 加入某房间
     leave = 'leave', // 离开某个房间
+    otherLeave = 'otherLeave', // 其他用户离开
+    logout = 'logout', // 主动断线
+    otherLogout = 'otherLogout', // 离线
     sendMsg = 'sendMsg', // 发送消息的回包
     newMsg = 'newMsg', // 发现新消息的回包
     sendInvite = 'sendInvite', // 发送邀请
     newInvite = 'newInvite', // 发生新邀请事件
+    sendNotice = 'sendNotice', // 发送一条新公告
 }

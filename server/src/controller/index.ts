@@ -2,6 +2,8 @@ import * as Koa from 'koa';
 import { userModel } from '../models/userModel';
 import { publicRoom, roomManager } from '../app';
 import { chatterManager } from '../models/chatter';
+import * as fs from 'fs'
+import * as path from 'path'
 
 /**
  * 注册一个账号
@@ -14,9 +16,9 @@ export async function register(ctx: Koa.Context) {
         msg: AppMsg.registerSuccess,
         data: null
     }
-    const user = userModel.getUserInfo(req.username)
-    if (user) {
-        await userModel.addUser(req.username, req.password, req.nickname, req.level)
+    const user = await userModel.getUserInfo(req.username)
+    if (!user) {
+        await userModel.addUser(req.username, req.password, req.nickname, req.level || userLevel.spuerAdmin)
     } else {
         resData.msg = AppMsg.userExist
         resData.code = AppCode.userExist
@@ -50,6 +52,26 @@ export async function getMembers(ctx: Koa.Context) {
     return
 }
 
+export async function upload(ctx: Koa.Context) {
+    console.log(ctx.request.files)
+    const file = ctx.request.files.uploadFileObj
+
+    // 创建可读流
+    const reader = fs.createReadStream(file.path)
+    
+    let filePath = path.join(__dirname, '../public/upload/') + `/${file.name}`
+    // 创建可写流
+    const upStream = fs.createWriteStream(filePath)
+    // 可读流通过管道写入可写流
+    reader.pipe(upStream)
+    return ctx.body = {
+        success: true,//required field
+        error: false,  //when file upload fail, this field will set the fail reason
+        url: `http://localhost:3000/upload/${file.name}`//a full path of image to show in thumbnail
+    }
+
+}
+
 /**
  * 登录
  * 建立websocket连接
@@ -60,10 +82,12 @@ export async function login(req: routeParams.login.request) {
         code: AppCode.done,
         data: {
             username: req.username,
+            level: 0,
             rooms: []
         }
     }
     if (!userInfo || userInfo.password !== req.password + '') {
+        retdata.msg = AppMsg.loginError
         retdata.code = AppCode.loginError
     } else {
         console.log(`【${req.username}】登陆了`)
@@ -78,14 +102,37 @@ export async function login(req: routeParams.login.request) {
                 const room = roomManager.getRoom(roomId)
                 const msgs = await user.getUnreadMsg(roomId)
                 if (room) {
+                    let members = room.getMemebers(),
+                        onlineMembers = room.getOnlineList()
+                    let arr: {
+                        name: username,
+                        isOnline: boolean,
+                        img: string
+                    }[] = []
+                    for (const member of members) {
+                        if (onlineMembers.includes(member)) {
+                            arr.push({
+                                name: member,
+                                isOnline: true,
+                                img: chatterManager.getChatter(member).getImg()
+                            })
+                        } else {
+                            arr.push({
+                                name: member,
+                                isOnline: false,
+                                img: chatterManager.getChatter(member).getImg()
+                            })
+                        }
+                    }
                     retdata.data.rooms.push({
                         roomId: room.getId(),
-                        members: room.getMemebers(),
+                        members: arr,
                         msgs
                     })
                 }
             }
         }
+        retdata.data.level = userInfo.level
     }
     return retdata
 }

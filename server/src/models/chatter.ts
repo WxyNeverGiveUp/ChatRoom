@@ -208,4 +208,11 @@ export class Chatter {
         await this.roomSet.del([roomId])
     }
 
+    /**
+     * 获取头像
+     */
+    getImg () {
+        return 'static/logo.png'
+    }
+
 }

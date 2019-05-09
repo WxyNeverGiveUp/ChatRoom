@@ -4,11 +4,6 @@ export const userTable = mysqlFactory<Table.user>({
     table: 'user'
 })
 
-const enum userLevel {
-    visitor = 0, // 普通社团成员
-    admin = 1, // 社团管理员
-    spuerAdmin = 2 // 超级管理员
-}
 
 export class UserModel {
     constructor() {}
@@ -20,7 +15,7 @@ export class UserModel {
      * @param nickname 昵称
      * @param level 等级权限
      */
-    async addUser(username: username, password: string, nickname: string, level: userLevel.visitor) {
+    async addUser(username: username, password: string, nickname: string, level: userLevel) {
         await userTable.insert({
             username,
             password,

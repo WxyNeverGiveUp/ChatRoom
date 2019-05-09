@@ -31,11 +31,11 @@ class AjaxRequest {
                     }
                     resolve(response.data)
                 })
-                .catch(function(error) {
+                .catch(function(err) {
                     if (isLoading) {
                         loading.close()
                     }
-                    reject(error)
+                    reject(err)
                     Message({
                         message: err.message,
                         type: "error",
@@ -47,7 +47,7 @@ class AjaxRequest {
     }
 
     /**
-     * get请求
+     * post请求
      * @param {string} url 请求地址
      * @param {hashMap} params 参数
      * @param {boolean} isLoading 是否需要加载
@@ -58,18 +58,17 @@ class AjaxRequest {
             loading = Loading.service(loadingOptions)
         }
         return new Promise((resolve, reject) => {
-            axios.post(url, params)
-                .then(function(response) {
+            axios.post(url, params).then(function(response) {
                     if (isLoading) {
                         loading.close()
                     }
                     resolve(response.data)
                 })
-                .catch(function(error) {
+                .catch(function(err) {
                     if (isLoading) {
                         loading.close()
                     }
-                    reject(error)
+                    reject(err)
                     Message({
                         message: err.message,
                         type: "error",

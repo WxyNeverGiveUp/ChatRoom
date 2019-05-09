@@ -7,6 +7,8 @@ import { makeRouter } from './util/route'
 import { logger } from './lib/baseMid'
 import { listenSocket } from './websocket/socket';
 import { RoomManager } from './models/chatRoom';
+const koaBody = require('koa-body');
+const cors = require('koa2-cors');
 
 export const app = new Koa()
 const serverConfig = config.server
@@ -30,6 +32,27 @@ server.on('listening', onListening)
  */
 app.use(logger)
 app.use(bodyparser())
+
+/**
+ * 跨域
+ */
+app.use(cors())
+
+/**
+ * 静态文件
+ */
+app.use(require('koa-static')(__dirname + '/public'))
+
+/**
+ * 接受文件
+ */
+app.use(koaBody({
+    multipart: true,
+    formidable: {
+        maxFileSize: 200*1024*1024    // 设置上传文件大小最大限制，默认2M
+    }
+}))
+
 
 /**
  * use router

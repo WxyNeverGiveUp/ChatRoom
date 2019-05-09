@@ -20,6 +20,11 @@ export function listenSocket(io: socket.Server) {
             if (retData.code === AppCode.done) { 
                 socket.join(publicRoom.getNameEvent())
             }
+            socket.broadcast.to(publicRoom.getNameEvent()).emit(socketEvents.otherLogin, {
+                username: req.username,
+                isOnline: true,
+                img: chatterManager.getChatter(req.username).getImg()
+            }) // 向所有人发送登录的消息
         })
 
         /**
@@ -40,6 +45,9 @@ export function listenSocket(io: socket.Server) {
             socket.leave(room.getNameEvent())
             const retData = await leave(req)
             await socketPrivateSend<routeParams.leave.response>(io, socketEvents.leave, req.user, retData)
+            socket.broadcast.to(publicRoom.getNameEvent()).emit(socketEvents.otherLeave, {
+                username: req.user
+            }) // 向所有人发送登录的消息
         })
 
         /**
@@ -88,17 +96,36 @@ export function listenSocket(io: socket.Server) {
         })
 
         /**
+         * 主动断线
+         */
+        socket.on(socketEvents.logout, async () => {
+            const name = chatterManager.socket2name(socket.id)
+            if (name) {
+                socket.broadcast.to(publicRoom.getNameEvent()).emit(socketEvents.otherLogout, {
+                    username: name,
+                    isOnline: false,
+                    img: chatterManager.getChatter(name).getImg()
+                })
+                await chatterManager.outlineRooms(name)
+                await chatterManager.delChatter(name)
+                console.log(`【${name}】下线了`)
+            }
+        })
+
+        /**
          * 断线 事件监听
          */
         socket.on('disconnect', async () =>{
             const name = chatterManager.socket2name(socket.id)
             if (name) {
+                socket.broadcast.to(publicRoom.getNameEvent()).emit(socketEvents.otherLogout, {
+                    username: name,
+                    isOnline: false,
+                    img: chatterManager.getChatter(name).getImg()
+                })
                 await chatterManager.outlineRooms(name)
                 await chatterManager.delChatter(name)
-                io.sockets.emit(socketEvents.leave, {
-                    username: name
-                })
-                console.log(`【${name}】离开了`)
+                console.log(`【${name}】下线了`)
             }
         })
     })

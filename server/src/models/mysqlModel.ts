@@ -36,7 +36,7 @@ export class MysqlModel<T> {
     async query(queryStr: string, params?: T) {
         return mysqlOp.exec_sql(queryStr, params)
     }
-    async del(wheres: T) {
+    async del(wheres: HashMap) {
         return mysqlOp.del(this.table, wheres)
     }
     /**

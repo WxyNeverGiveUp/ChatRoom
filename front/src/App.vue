@@ -1,47 +1,69 @@
 <template>
-  <div id="app">
-    <el-container>
-    	<el-header>Header</el-header>
-		<el-container>
-			<el-aside width="200px">Aside</el-aside>
-			<el-main>
-    			<router-view/>
-			</el-main>
-		</el-container>
-    </el-container>
-  </div>
+	<div id="app">
+		<Socket></Socket>
+			<el-container height="100%" direction="vertical">
+				<el-header v-show='$store.state.user.isLogin'>
+					<vheader></vheader>
+				</el-header>
+				<el-container>
+					<el-aside width="201px" v-show='$store.state.user.isLogin'>
+						<vside></vside>
+					</el-aside>
+					<el-main :class="{ 'main-bg': $store.state.user.isLogin }">
+						<router-view/>
+					</el-main>
+				</el-container>
+			</el-container>
+	</div>
 </template>
 
 <script>
-export default {
-  name: 'App'
-}
+	import vside from './components/common/aside.vue'
+	import vheader from './components/common/header.vue'
+	import Socket from './components/common/socket.vue'
+	export default {
+		name: 'App',
+		components: {
+			vside,
+			vheader,
+			Socket
+		},
+	}
 </script>
 
-<style>
+<style lang="less">
 	@import './assets/css/reset.css';
+	body {
+		height: 100%;
+		.el-table th.gutter{
+			display: table-cell!important;
+		}
+	}
 	#app {
 		font-family: 'Avenir', Helvetica, Arial, sans-serif;
 		-webkit-font-smoothing: antialiased;
 		-moz-osx-font-smoothing: grayscale;
-		text-align: center;
+		height: 100%;
+		width:100%;
+		background: url('./assets/images/background.jpg') no-repeat;
+		background-position: 100%, 100%;
+		overflow: hidden;
+		background-size:cover;
 	}
 	.el-header {
 		background-color: #B3C0D1;
 		color: #333;
-		text-align: center;
 		line-height: 60px;
 	}
 	.el-aside {
-		background-color: #D3DCE6;
+		background-color: #fff;
 		color: #333;
-		text-align: center;
 		line-height: 200px;
 	}
 	.el-main {
-		background-color: #E9EEF3;
 		color: #333;
-		text-align: center;
-		line-height: 160px;
+	}
+	.main-bg {
+		background-color: #dde0e2;
 	}
 </style>
