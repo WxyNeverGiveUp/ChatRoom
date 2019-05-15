@@ -9,6 +9,7 @@ import qs from 'qs' // 将json转换为数组
 import VueSocketIO from 'vue-socket.io'
 import vUploader from 'v-uploader';
 import { store } from './store';
+import 'font-awesome/css/font-awesome.min.css' // font-awesome 字体
 
 Vue.config.productionTip = false
 Vue.prototype.$axios = axios // 全局注册，使用方法为:this.$axios

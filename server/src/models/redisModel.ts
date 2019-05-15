@@ -159,6 +159,25 @@ export class CacheHash<T> extends CacheBase {
         })
         return result
     }
+
+    /**
+     * 删除一个键
+     */
+    async delField(field: string): Promise<boolean> {
+        let result: boolean = true
+        await new Promise((resolve, reject) => {
+            redisClient.hdel(this.fullKey, field, (e) => {
+                if (e) {
+                    result = false
+                    console.log(e)
+                    reject()
+                } else {
+                    resolve()
+                }
+            })
+        })
+        return result
+    }
 }
 
 /**

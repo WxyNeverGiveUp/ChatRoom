@@ -1,6 +1,8 @@
 import { CacheHash, HashFactory, CacheSet, SetFactory } from './redisModel';
 import { config } from '../config/config';
 import { roomManager } from '../app';
+import * as fs from 'fs'
+import * as path from 'path'
 
 class ChatterManager {
     public chatters: Map<username, Chatter> // 用户map
@@ -17,10 +19,10 @@ class ChatterManager {
      */
     createChatter (username: username, socketId: string): Chatter {
         const chatter = this.chatters.get(username)
+        this.socketIdMap.set(socketId, username)
         if (!chatter) {
             const newChatter = new Chatter(username, socketId)
             this.chatters.set(username, newChatter)
-            this.socketIdMap.set(socketId, username)
             return newChatter
         } else {
             return chatter
@@ -59,7 +61,7 @@ class ChatterManager {
         for (const roomId of roomIds) {
             const room = roomManager.getRoom(roomId)
             if (room) {
-                room.online(user)
+                await room.online(user)
             }
         }
     }
@@ -74,9 +76,11 @@ class ChatterManager {
         for (const roomId of roomIds) {
             const room = roomManager.getRoom(roomId)
             if (room) {
-                room.offline(user)
+                await room.offline(user)
             }
         }
+        const socketId = chatter.getSocketId()
+        this.socketIdMap.delete(socketId)
     }
 
     /**
@@ -94,6 +98,7 @@ export class Chatter {
     private socketId: string // 每个用户连接时的socketId 断开后销毁
     private username: username
     private roomMsg: CacheHash<message[]> // 缓存消息信息
+    private history: CacheHash<message[]> // 缓存历是消息
     private roomSet: CacheSet<number> // 该用户曾加入过的聊天室
     constructor(username: username, socketId: string) {
         this.username = username
@@ -105,6 +110,10 @@ export class Chatter {
         this.roomSet = SetFactory<number>({
             pre: config.server.mount, 
             key: cacheKey.s_username_roomId + this.username
+        })
+        this.history = HashFactory<message[]>({
+            pre: config.server.mount, 
+            key: cacheKey.h_username_history_msg + username
         })
     }
 
@@ -119,12 +128,52 @@ export class Chatter {
             pre: config.server.mount, 
             key: cacheKey.h_username_room_msg + user
         })
+        const history = HashFactory<message[]>({
+            pre: config.server.mount, 
+            key: cacheKey.h_username_history_msg + user
+        })
+        /**
+         * 历史消息
+         */
+        let historyMsgList = await history.getField(message.roomId + '')
+        if (!historyMsgList) {
+            await history.setField(message.roomId + '', [message])
+        } else {
+            historyMsgList.push(message)
+            await history.setField(message.roomId + '', historyMsgList)
+        }
+
+        /**
+         * 当前消息
+         */
         let msgList = await roomMsg.getField(message.roomId + '')
         if (!msgList) {
             await roomMsg.setField(message.roomId + '', [message])
         } else {
             msgList.push(message)
             await roomMsg.setField(message.roomId + '', msgList)
+        }
+    }
+
+    /**
+     * 添加自己的历时消息
+     * @param user 用户
+     * @param message 消息
+     */
+    static async addMyMsgHistory(user: username, message: message) {
+        const history = HashFactory<message[]>({
+            pre: config.server.mount, 
+            key: cacheKey.h_username_history_msg + user
+        })
+        /**
+         * 历史消息
+         */
+        let historyMsgList = await history.getField(message.roomId + '')
+        if (!historyMsgList) {
+            await history.setField(message.roomId + '', [message])
+        } else {
+            historyMsgList.push(message)
+            await history.setField(message.roomId + '', historyMsgList)
         }
     }
 
@@ -145,6 +194,22 @@ export class Chatter {
             const newMsgList = msgList.splice(msgIndex, 1)
             await roomMsg.setField(message.roomId + '', newMsgList)
         }
+    }
+
+    static async readAllMsgs(user: username, roomId: number) {
+        const roomMsg = HashFactory<message[]>({
+            pre: config.server.mount, 
+            key: cacheKey.h_username_room_msg + user
+        })
+        await roomMsg.delField(roomId + '')
+    }
+
+    /**
+     * 获取历时未读消息
+     * @param roomId 房间
+     */
+    async getHistory(roomId: number) {
+        return await this.history.getField(roomId + '')
     }
 
     /**
@@ -171,19 +236,6 @@ export class Chatter {
     }
 
     /**
-     * 阅读某条信息
-     * @param roomId 聊天室ID
-     * @param messageId 消息ID
-     */
-    async readMessage(roomId: number, messageId: number) {
-        const msgList = await this.getUnreadMsg(roomId)
-        const msg = msgList.find(item => item.roomId === roomId && item.id === messageId)
-        if (msg) {
-            await Chatter.delUnreadMsg(this.username, msg)
-        }
-    }
-
-    /**
      * 获取聊天室
      */
     async getRooms(): Promise<number[]> {
@@ -195,7 +247,7 @@ export class Chatter {
      */
     async joinRoom(roomId: number) {
         const room = roomManager.getRoom(roomId)
-        room.join(this.username)
+        await room.join(this.username)
         await this.roomSet.add(roomId)
     }
 
@@ -204,7 +256,7 @@ export class Chatter {
      */
     async leaveRoom(roomId: number) {
         const room = roomManager.getRoom(roomId)
-        room.leave(this.username)
+        await room.leave(this.username)
         await this.roomSet.del([roomId])
     }
 
@@ -212,7 +264,31 @@ export class Chatter {
      * 获取头像
      */
     getImg () {
-        return 'static/logo.png'
+        const url = path.join(__dirname, '../public/upload/')
+        const filename = readDirSync(url)
+        const isExists = filename.filter(i => i.includes(this.username))
+        if (isExists.length > 0) {
+            // 寻找最新的一张图片
+            const prename = isExists.map(item => item.split('.png')[0])
+            const times = prename.map(item => item.split('-')[1]).map(item => Number(item))
+            const lastTime = times.sort((a, b) =>  b - a)[0]
+            return `http://localhost:3000/upload/${this.username}-${lastTime}.png`
+        } else {
+            return 'http://localhost:3000/upload/logo.png'
+        }
     }
+}
 
+function readDirSync(path: string){  
+    let filenames: string[] = []
+    let pa = fs.readdirSync(path);  
+    pa.forEach(function(ele){  
+        var info = fs.statSync(path+"/"+ele)      
+        if(info.isDirectory()){  
+            readDirSync(path+"/"+ele) 
+        }else{  
+            filenames.push(ele)
+        }     
+    })  
+    return filenames
 }

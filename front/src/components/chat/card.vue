@@ -1,6 +1,7 @@
 <template>
 <div class="card">
     <header>
+        <createGroup></createGroup>
         <img class="avatar" width="40" height="40" :alt="$store.state.user.name" :src="$store.state.user.img">
         <p class="name">{{ $store.state.user.name }}</p>
     </header>
@@ -11,6 +12,7 @@
 </template>
 
 <script>
+import CreateGroup from './createGroup'
 export default {
     data() {
         return {
@@ -22,8 +24,11 @@ export default {
             this.$store.state.filterKey = this.search
             this.$store.getters.filterSessions
         }
+    },
+    components: {
+       CreateGroup 
     }
-};
+}
 </script>
 
 <style scoped lang="less">

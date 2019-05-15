@@ -7,21 +7,27 @@ export const store = new Vuex.Store({
         user: {
             isLogin: false,
             name: '',
-            img: 'static/logo.png',
+            img: '',
             level: 0
         },
         sessions: [],
-        // 当前选中的会话
+        // 当前群聊选中的会话
         currentSessionId: 0,
         // 过滤出只包含这个key的会话
         filterKey: ''
     },
     mutations: {
-        login(state) {
+        LOGIN(state) {
             state.user.isLogin = true
         },
-        logout(state) {
-            state.user.isLogin = false
+        LOGOUT(state) {
+            state.user = {
+                isLogin: false,
+                name: '',
+                img: '',
+                level: 0
+            }
+            state.sessions = []
         },
         init_session(state, payload) {
             for (const session of payload.rooms) {
@@ -33,6 +39,12 @@ export const store = new Vuex.Store({
             let session = state.sessions.find(item => item.id === state.currentSessionId)
             session.messages.push(payload.message)
         },
+        // 收到消息
+        NEW_MESSAGE(state, payload) {
+            console.log(payload)
+            let session = state.sessions.find(item => item.id === payload.message.roomId)
+            session.messages.push(payload.message)
+        },
         // 选择会话
         SELECT_SESSION(state, payload) {
             state.currentSessionId = payload.id
@@ -41,15 +53,26 @@ export const store = new Vuex.Store({
         SET_FILTER_KEY(state, payload) {
             state.filterKey = payload.value
         },
+        ADD_SESSION(state, payload) {
+            state.sessions.push(payload.session)
+        }
 
     },
     getters: {
-        // 过滤后的会话列表
-        filterSessions: state => {
+        // 过滤后群聊会话列表
+        filterGroupSessions: state => {
             if (state.filterKey === '') {
-                return state.sessions
+                return state.sessions.filter(session => (session.members && session.members.length > 2) || (session.id === 0))
             } else {
-                return state.sessions.filter(session => session.members.map((i) => i.name).join('').includes(state.filterKey));
+                return state.sessions.filter(session => (session.members && session.members.length > 2) || (session.id === 0)).filter(session => session.members.map((i) => i.name).join('').includes(state.filterKey));
+            }
+        },
+        // 过滤后私聊会话列表
+        filterPrivateSessions: state => {
+            if (state.filterKey === '') {
+                return state.sessions.filter(session => (session.members && session.members.length <= 2) && (session.id !== 0))
+            } else {
+                return state.sessions.filter(session => (session.members && session.members.length <= 2) && (session.id !== 0)).filter(session => session.members.map((i) => i.name).join('').includes(state.filterKey));
             }
         },
         // 获取当前session
@@ -60,16 +83,6 @@ export const store = new Vuex.Store({
         // 获取当前会话index
         currentId: state => {
             return state.currentSessionId
-        }
+        },
     }
 })
-
-store.watch(
-    (state) => state.sessions,
-    (val) => {
-        console.log('CHANGE: ', val)
-        localStorage.setItem('vue-chat-session', JSON.stringify(val))
-    }, {
-        deep: true
-    }
-)

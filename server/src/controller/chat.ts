@@ -10,9 +10,8 @@ export async function join(req: routeParams.join.request) {
     }
     const room = roomManager.getRoom(Number(req.roomId)),
         chatter = chatterManager.getChatter(req.user)
-    chatter.joinRoom(room.getId())
+    await chatter.joinRoom(room.getId())
     console.log(`【${req.user}】加入房间：【${req.roomId}】`)
-    console.log(`当前房间用户有:${room.getMemebers().join(',')}`)
     return retData
 }
 
@@ -22,13 +21,15 @@ export async function join(req: routeParams.join.request) {
 export async function leave(req: routeParams.leave.request){
     let retData: routeParams.leave.response = {
         code: AppCode.done,
-        data: null
+        data: {
+            roomId: req.roomId,
+            username: req.user
+        }
     }
     const room = roomManager.getRoom(Number(req.roomId)),
         chatter = chatterManager.getChatter(req.user)
-    chatter.leaveRoom(room.getId())
+    await chatter.leaveRoom(room.getId())
     console.log(`【${req.user}】离开房间：【${req.roomId}】`)
-    console.log(`当前房间用户有:${room.getMemebers().join(',')}`)
     return retData
 }
 
@@ -38,12 +39,18 @@ export async function leave(req: routeParams.leave.request){
 export async function sendMsg(req: routeParams.sendMsg.request){
     let retData: routeParams.sendMsg.response = {
         code: AppCode.done,
-        data: null
+        data: {
+            msg: null
+        }
     }
     const room = roomManager.getRoom(Number(req.message.roomId))
-    await room.sendMessage(req.message)
+    const msg = req.message,
+        msgId = await room.getMsgId()
+        msg.id = msgId // 添加ID
+        msg.date = new Date().getTime() // 添加时间戳
+    await room.sendMessage(msg)
+    retData.data.msg = msg
     console.log(`【${req.message.from}】发送消息：【${req.message.content}】`)
-    console.log(`当前房间用户有:${room.getMemebers().join(',')}`)
     return retData
 }
 

@@ -47,14 +47,15 @@
     data() {
         return {
             navList: [
-                {navName:'活动资讯', route:'/', icon: 'el-icon-location', needLevel: false, subNav: [
-                    {subNavName: '活动列表', route: '/activity/list', icon: 'el-icon-location', needLevel: false},
-                    {subNavName: '添加活动', route: '/activity/add', icon: 'el-icon-location', needLevel: true}
+                {navName:'管理员审核', route:'/admin/list', icon: 'el-icon-location', level: 2, subNav: []},
+                {navName:'活动资讯', route:'/', icon: 'el-icon-location', level: 0, subNav: [
+                    {subNavName: '活动列表', route: '/activity/list', icon: 'el-icon-location', level: 0},
+                    {subNavName: '添加活动', route: '/activity/add', icon: 'el-icon-location', level: 1}
                 ]},
-                {navName:'聊天室', route:'/', icon: 'el-icon-location', needLevel: false, subNav: [
-                    {subNavName:'群聊', route:'/chat', icon: 'el-icon-location', needLevel: false},
-                    {subNavName:'私聊', route:'/', icon: 'el-icon-location', needLevel: false},
-                    {subNavName:'所有人', route:'/', icon: 'el-icon-location', needLevel: false},
+                {navName:'聊天室', route:'/', icon: 'el-icon-location', level: 0, subNav: [
+                    {subNavName:'群聊', route:'/groupChat', icon: 'el-icon-location', level: 0},
+                    {subNavName:'私聊', route:'/privateChat', icon: 'el-icon-location', level: 0},
+                    {subNavName:'所有人', route:'/', icon: 'el-icon-location', level: 0},
                 ]}
             ],
             isCollapse: false
@@ -65,8 +66,7 @@
             let newList = []
             for (const nav of this.navList) {
                 let item = {}
-                if (nav.needLevel) {
-                    if (this.$store.state.user.level > 0) {
+                if (this.$store.state.user.level >= nav.level) {
                         item.navName = nav.navName
                         item.route = nav.route
                         item.icon = nav.icon
@@ -74,48 +74,19 @@
                         /**
                          * 判断子路由
                          */
-                        if (nav.subNav.length > 0) {
+                        if (nav.subNav.length >= 0) {
                             for (const sub of nav.subNav) {
-                                if (sub.needLevel) {
-                                    if (this.$store.state.user.level > 0) {
-                                        item.subNav.push({
-                                            subNavName: sub.subNavName,
-                                            route: sub.route,
-                                            icon: sub.icon
-                                        })
-                                    }
-                                } else {
-                                    item.subNav.push(sub)
-                                }
-                            }
-                        }
-                        newList.push(item)
-                    }
-                } else {
-                    item.navName = nav.navName
-                    item.route = nav.route
-                    item.icon = nav.icon
-                    item.subNav = []
-                    /**
-                     * 判断子路由
-                     */
-                    if (nav.subNav.length > 0) {
-                        for (const sub of nav.subNav) {
-                            if (sub.needLevel) {
-                                if (this.$store.state.user.level > 0) {
+                                if (this.$store.state.user.level >= sub.level) {
                                     item.subNav.push({
                                         subNavName: sub.subNavName,
                                         route: sub.route,
                                         icon: sub.icon
                                     })
                                 }
-                            } else {
-                                item.subNav.push(sub)
                             }
                         }
-                    }
-                    newList.push(item)
-                } 
+                        newList.push(item)
+                }
             }
             return newList
         }

@@ -42,8 +42,8 @@ export async function getMembers(ctx: Koa.Context) {
     }
     const room = roomManager.getRoom(req.roomId)
     if (room) {
-        retData.data.members = room.getMemebers()
-        retData.data.onlineList = room.getOnlineList()
+        retData.data.members = await room.getMemebers()
+        retData.data.onlineList = await room.getOnlineList()
     } else {
         retData.msg = AppMsg.roomNotExist
         retData.code = AppCode.roomNotExist
@@ -53,23 +53,32 @@ export async function getMembers(ctx: Koa.Context) {
 }
 
 export async function upload(ctx: Koa.Context) {
-    console.log(ctx.request.files)
-    const file = ctx.request.files.uploadFileObj
+    const file = ctx.request.files.file
+    const username = ctx.request.body.name,
+        now = new Date().getTime()
 
     // 创建可读流
     const reader = fs.createReadStream(file.path)
     
-    let filePath = path.join(__dirname, '../public/upload/') + `/${file.name}`
+    let filePath = path.join(__dirname, '../public/upload/') + `/${username}-${now}.png`
+
     // 创建可写流
     const upStream = fs.createWriteStream(filePath)
     // 可读流通过管道写入可写流
-    reader.pipe(upStream)
-    return ctx.body = {
-        success: true,//required field
-        error: false,  //when file upload fail, this field will set the fail reason
-        url: `http://localhost:3000/upload/${file.name}`//a full path of image to show in thumbnail
-    }
+    // reader.pipe(upStream)
 
+    const img = await new Promise( (resolve) => {
+        let stream = reader.pipe(upStream);
+        stream.on('finish', function () {
+            resolve(`http://localhost:3000/upload/${username}-${now}.png`);
+        })
+    })
+    return ctx.body = {
+        code: AppCode.done,
+        data: {
+            img,
+        }
+    }
 }
 
 /**
@@ -82,6 +91,7 @@ export async function login(req: routeParams.login.request) {
         code: AppCode.done,
         data: {
             username: req.username,
+            img: chatterManager.getChatter(req.username).getImg(),
             level: 0,
             rooms: []
         }
@@ -93,6 +103,7 @@ export async function login(req: routeParams.login.request) {
         console.log(`【${req.username}】登陆了`)
         // 创建一个聊天者实例
         const user = chatterManager.getChatter(req.username)
+        await chatterManager.onlineRooms(req.username)
         await user.joinRoom(publicRoom.getId())
 
         // 默认加入公共聊天室
@@ -102,30 +113,26 @@ export async function login(req: routeParams.login.request) {
                 const room = roomManager.getRoom(roomId)
                 const msgs = await user.getUnreadMsg(roomId)
                 if (room) {
-                    let members = room.getMemebers(),
-                        onlineMembers = room.getOnlineList()
+                    let members = await room.getMemebers(),
+                        onlineMembers = await room.getOnlineList()
                     let arr: {
                         name: username,
                         isOnline: boolean,
                         img: string
                     }[] = []
                     for (const member of members) {
-                        if (onlineMembers.includes(member)) {
+                        if (chatterManager.getChatter(member)) {
                             arr.push({
                                 name: member,
-                                isOnline: true,
-                                img: chatterManager.getChatter(member).getImg()
-                            })
-                        } else {
-                            arr.push({
-                                name: member,
-                                isOnline: false,
+                                isOnline: onlineMembers.includes(member) ? true : false,
                                 img: chatterManager.getChatter(member).getImg()
                             })
                         }
                     }
                     retdata.data.rooms.push({
                         roomId: room.getId(),
+                        roomName: room.getName(),
+                        hasNewMsg: msgs.length > 0,
                         members: arr,
                         msgs
                     })

@@ -5,6 +5,7 @@
             <List></List>
         </div>
         <div class="main">
+            <div class="title" v-if="this.$store.getters.currentSession">{{ this.$store.getters.currentSession.name }}</div>
             <Message></Message>
             <ChatText></ChatText>
         </div>
@@ -13,12 +14,12 @@
 
 <script>
 import Card from './card'
-import List from './list'
+import List from './privateList'
 import ChatText from './text'
 import Message from './message'
 export default {
-    name: 'chat',
-    components: { Card, List, ChatText, Message },
+    name: 'privateChat',
+    components: {Card, List, ChatText, Message },
 }
 </script>
 
@@ -29,6 +30,11 @@ export default {
     height: 600px;
     overflow: hidden;
     border-radius: 3px;
+    .title {
+        font-size: 16px;
+        text-align: center;
+        margin: 5px 0;
+    }
     .sidebar, .main {
         height: 100%;
     }

@@ -10,9 +10,6 @@
         <el-form-item label="重复密码" prop="checkPass">
             <el-input type="password" placeholder="请输入再次密码" show-password v-model="registerForm.pswd2"/>
         </el-form-item>
-        <el-form-item label="上传图片" prop="checkPass">
-            <el-input type="file" placeholder="请输入再次密码" show-password v-model="registerForm.pswd2"/>
-        </el-form-item>
         <el-form-item>
             <el-col :span="8">
                 <el-button type="success" @click='register()'>注册</el-button>

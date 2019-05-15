@@ -4,10 +4,12 @@ import login from '@/components/login'
 import HelloWorld from '@/components/HelloWorld'
 import register from '@/components/register'
 import myMain from '@/components/main'
-import chat from '@/components/chat/chatIndex'
+import groupChat from '@/components/chat/groupChat'
+import privateChat from '@/components/chat/privateChat'
 import add from '@/components/activity/add'
 import list from '@/components/activity/list'
 import detail from '@/components/activity/detail'
+import adminList from '@/components/admin/list'
 
 Vue.use(Router)
 
@@ -29,9 +31,13 @@ export default new Router({
         name: 'main',
         component: myMain
     }, {
-        path: '/chat',
-        name: 'chat',
-        component: chat
+        path: '/groupChat',
+        name: 'groupChat',
+        component: groupChat
+    }, {
+        path: '/privateChat',
+        name: 'privateChat',
+        component: privateChat
     }, {
         path: '/activity/list',
         name: 'activityList',
@@ -44,5 +50,9 @@ export default new Router({
         path: '/activity/detail',
         name: 'activityDetail',
         component: detail
+    }, {
+        path: '/admin/list',
+        name: 'adminList',
+        component: adminList
     }]
 })

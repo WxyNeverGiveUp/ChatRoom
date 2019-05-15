@@ -51,7 +51,7 @@ export async function delActivity(ctx: Koa.Context) {
 }
 
 /**
- * 删除某个活动详情
+ * 获取某个活动详情
  * http请求
  */
 export async function getActivityDetail(ctx: Koa.Context) {

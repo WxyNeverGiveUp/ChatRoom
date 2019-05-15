@@ -1,12 +1,12 @@
 <template>
 <div class="message">
-    <ul v-if="$store.getters.currentSession.messages">
+    <ul v-if="$store.getters.currentSession">
         <li v-for="item in $store.getters.currentSession.messages" :key="item.id">
             <p class="time">
                 <span>{{ item.date | time() }}</span>
             </p>
             <div class="main" :class="{ self: item.self }" id="main">
-                <img class="avatar" width="30" height="30" :src="$store.getters.currentSession.members[0].img" />
+                <img class="avatar" width="30" height="30" :src="item.self ? $store.state.user.img : $store.getters.currentSession.members.find(i => i.name === item.from) ? $store.getters.currentSession.members.find(i => i.name === item.from).img : item.img" />
                 <div class="name" v-if="$store.getters.currentSession.members.length > 1">{{ item.from }}</div>
                 <div class="text">{{ item.content }}</div>
             </div>
@@ -28,7 +28,11 @@ export default {
     },
     computed: {
         message() {
-            return this.$store.getters.currentSession.messages
+            if (this.$store.getters.currentSession) {
+                return this.$store.getters.currentSession.messages
+            } else {
+                return []
+            }
         }
     },
     watch: {
@@ -38,6 +42,9 @@ export default {
             })
         }
     },
+    created() {
+        console.log('currentSession==>', this.$store.getters.currentSession)
+    }   
 }
 </script>
 

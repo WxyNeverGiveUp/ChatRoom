@@ -13,3 +13,7 @@ export function timeFormat(timestamp, isFull = true) {
         return y + '-' + add0(m) + '-' + add0(d)
     }
 }
+
+export function randomName() {
+    let pre = ['随机1', '随机2', '随机3']
+}

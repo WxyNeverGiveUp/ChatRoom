@@ -1,5 +1,5 @@
 import { roomName } from '../util/socket';
-import { KeyValFactory, CacheKeyVal, CacheHash, HashFactory, CacheList, ListFactory } from './redisModel';
+import { KeyValFactory, CacheKeyVal, CacheHash, HashFactory, CacheList, ListFactory, CacheSet, SetFactory } from './redisModel';
 import { config } from '../config/config';
 import { io } from '../app'
 import { Chatter } from './chatter';
@@ -9,20 +9,19 @@ import { Chatter } from './chatter';
  */
 export class RoomManager {
     private id: CacheKeyVal // 聊天室唯一ID
-    private roomName: CacheHash<number> // 房间名字
+    private roomName: CacheHash<string> // 房间名字
     public rooms: Map<number, Room>
-    public privateRoomsIdMap: Map<string, number> // 私聊房间名字对应的roomId
+    // public privateRoomsIdMap: Map<string, number> // 私聊房间名字对应的roomId
     constructor() {
         this.id = KeyValFactory({
             pre: config.server.mount, 
             key: cacheKey.k_roomId
         })
-        this.roomName = HashFactory<number>({
+        this.roomName = HashFactory<string>({
             pre: config.server.mount,
-            key: cacheKey.h_roomName_id
+            key: cacheKey.h_id_roomName
         })
         this.rooms = new Map()
-        this.privateRoomsIdMap = new Map()
     }
 
     /**
@@ -47,14 +46,22 @@ export class RoomManager {
     async createRoom(users: username[]) {
         const id = await this.id.incrby(),
             name = this.getRoomName(users)
-        console.log(`新建房间:${name},id:${id}`)
-        await this.roomName.setField(name, id)
+        console.log(`新建房间:${name}, id:${id}`)
+        await this.roomName.setField(id + '', name)
         const room = new Room(name, id)
         this.rooms.set(id, room)
-        if (users.length === 2) { // 2个人说明是私聊房间
-            this.privateRoomsIdMap.set(name, id)
-        }
         return room
+    }
+
+    /**
+     * 更新房间名称
+     * @param roomId 房间的ID
+     * @param newName 房间的名称
+     */
+    async updateRoomName(roomId: number, newName: string) {
+        await this.roomName.setField(roomId + '', newName)
+        const room = this.rooms.get(roomId)
+        room.updateName(newName)
     }
 
     /**
@@ -66,15 +73,6 @@ export class RoomManager {
         this.rooms.set(publicId, room)
         return room
     }
-
-    /**
-     * 获取私聊房间id
-     * @param users 用户
-     */
-    getPrivateRoomId(users: username[]) {
-        const name = this.getRoomName(users)
-        return this.privateRoomsIdMap.get(name)
-    }
     
     /**
      * 获取指定聊天室
@@ -85,22 +83,27 @@ export class RoomManager {
     }
 }
 
-
 /**
  * 单独一个聊天室
  */
 class Room {
     private id: number // 唯一Id
     private roomName: string
-    private onlineList: Set<username>
-    private members: Set<username>
+    private onlineList: CacheSet<username>
+    private members: CacheSet<username>
     private messageList: CacheList<message>
     private messageCounter: CacheKeyVal // 聊天室消息缓存
     constructor(roomName: string, id: number) {
         this.roomName = roomName
         this.id = id
-        this.onlineList = new Set()
-        this.members = new Set()
+        this.onlineList = SetFactory<username>({
+            pre: config.server.mount, 
+            key: cacheKey.s_roomId_onlineList + this.id
+        })
+        this.members = SetFactory<username>({
+            pre: config.server.mount, 
+            key: cacheKey.s_roomId_members + this.id
+        })
         this.messageCounter = KeyValFactory({
             pre: config.server.mount,
             key: cacheKey.k_room_messageCounter
@@ -115,8 +118,8 @@ class Room {
      * 上线
      * @param user 用户名 
      */
-    online(user: username) {
-        this.onlineList.add(user)
+    async online(user: username) {
+        await this.onlineList.add(user)
         return
     }
 
@@ -124,8 +127,8 @@ class Room {
      * 离线
      * @param user 用户名
      */
-    offline(user: username) {
-        this.onlineList.delete(user)
+    async offline(user: username) {
+        await this.onlineList.del([user])
         return
     }
 
@@ -133,39 +136,42 @@ class Room {
      * 用户进入聊天室
      * @param username 用户名
      */
-    join(user: username) {
-        this.members.add(user)
-        this.onlineList.add(user)
+    async join(user: username) {
+        await this.members.add(user)
+        await this.onlineList.add(user)
     }
 
     /**
      * 用户离开聊天室
      * @param username 用户名
      */
-    leave(user: username) {
-        this.members.delete(user)
-        this.onlineList.delete(user)
+    async leave(user: username) {
+        await this.members.del([user])
+        await this.onlineList.del([user])
     }
 
     /**
      * 获取当前在线人数
      */
-    getOnlineCounter(): number {
-        return this.onlineList.size
+    async getOnlineCounter(): Promise<number> {
+        const online = await this.onlineList.getAll()
+        return online.length
     }
 
     /**
      * 获取当前在线列表
      */
-    getOnlineList(): string[] {
-        return Array.from(this.onlineList)
+    async getOnlineList(): Promise<string[]> {
+        const online = await this.onlineList.getAll()
+        return online
     }
 
     /**
      * 获取该聊天室成员
      */
-    getMemebers(): string[] {
-        return Array.from(this.members)
+    async getMemebers(): Promise<string[]> {
+        const members = await this.members.getAll()
+        return members
     }
 
     /**
@@ -173,6 +179,14 @@ class Room {
      */
     getName(): string {
         return this.roomName
+    }
+
+    /**
+     * 更改聊天室名称
+     * @param newName 房间的新名字
+     */
+    updateName(newName: string) {
+        this.roomName = newName
     }
 
     /**
@@ -190,11 +204,17 @@ class Room {
     }
 
     /**
-     * 缓存消息
-     * @param msg 消息
+     * 获取消息id
      */
-    async cacheMessage(msg: message) {
-        await this.messageCounter.incrby()
+    async getMsgId() {
+        return await this.messageCounter.incrby()
+    }
+
+    /**
+     * 缓存消息
+     * @param msg 
+     */
+    async cacheMsg(msg: message) {
         this.messageList.push(msg)
     }
 
@@ -203,10 +223,13 @@ class Room {
      * @param msg 消息
      */
     async sendMessage(msg: message) {
-        io.to(this.getNameEvent()).emit(socketEvents.newMsg, msg)
-        for (const member of this.members) {
-            if (member != msg.from) {
+        io.to(this.getNameEvent()).emit(socketEvents.newMsg, msg) // 向房间在线的人广播
+        const members = await this.members.getAll()
+        for (const member of members) {
+            if (member !== msg.from) {
                 await Chatter.addUnreadMsg(member, msg)
+            } else {
+                await Chatter.addMyMsgHistory(member, msg)
             }
         }
     }

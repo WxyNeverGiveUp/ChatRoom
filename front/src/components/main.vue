@@ -9,7 +9,7 @@ export default {
 	name: 'myMain',
 	data () {
 		return {
-            msg: '欢迎来到xx社团即使通讯平台'
+            msg: '欢迎来到社团即时通讯管理平台'
 		}
 	},
   	created() {

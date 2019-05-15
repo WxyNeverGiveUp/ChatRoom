@@ -139,8 +139,11 @@ declare namespace routeParams {
             data: {
                 username: username,
                 level: number,
+                img: string,
                 rooms: {
                     roomId: number,
+                    roomName: string,
+                    hasNewMsg: boolean,
                     members: {
                         isOnline: boolean,
                         name: username,
@@ -172,7 +175,8 @@ declare namespace routeParams {
         type request = join.request
         interface response extends baseResponse {
             data: {
-                invite: invite                
+                username: username,
+                roomId: number               
             }
         }
     }
@@ -187,7 +191,48 @@ declare namespace routeParams {
         }
 
         interface response extends baseResponse {
+            data: {
+                msg: message
+            }
+        } 
+    }
+
+    /**
+     * 阅读信息
+     */
+    namespace readMsg {
+        interface request {
+            roomId: number,
+            name: username
+        }
+
+        interface response extends baseResponse {
             data: null
+        }
+    }
+
+    /**
+     * 创建群组
+     */
+    namespace createGroup {
+        interface request {
+            from: username,
+            to: username[],
+            users: username[]
+        }
+
+        interface response extends baseResponse {
+            data: {
+                roomId: number,
+                roomName: string,
+                from: username,
+                to: username[],
+                members: {
+                    name: username,
+                    img: string,
+                    isOnline: boolean
+                }[]
+            }
         } 
     }
 
@@ -228,7 +273,13 @@ declare namespace routeParams {
 
         interface response extends baseResponse {
             data: {
-                invite: invite
+                invite: invite,
+                roomName: string,
+                members: {
+                    name: username,
+                    img: string,
+                    isOnline: boolean
+                }[]
             }
         } 
     }
@@ -317,6 +368,44 @@ declare namespace routeParams {
             }
         }
     }
+
+    /**
+     * 获取所有管理员
+     */
+    namespace getAdmins {
+        interface request {}
+        interface response extends baseResponse {
+            data: {
+                list: {
+                    realname: string, 
+                    academy: string, 
+                    club: string, 
+                    studynumber: number, 
+                    position: string, 
+                    username: username, 
+                    isPass: number
+                }[]
+            }
+        }
+    }
+
+    /**
+     * 添加管理员申请
+     */
+    namespace addAdmin {
+        interface request {
+            realname: string, 
+            academy: string, 
+            club: string, 
+            studynumber: number, 
+            position: string, 
+            username: string
+        }
+        interface response extends baseResponse {
+            data: {
+            }
+        }
+    }
 }
 
 declare namespace Table {
@@ -336,6 +425,16 @@ declare namespace Table {
         begin_time: Date, // 开始时间
         end_time: Date, // 结束时间
     }
+    interface admin {
+        id?: number, // admin自增
+        realname: string, // 真实姓名
+        academy: string, // 学院
+        club: string, // 社团
+        studynumber: number, // 学号
+        position: string // 职位
+        username: string, // 用户名
+        is_pass: number // 审核状态
+    }
 }
 
 declare type username = string
@@ -354,12 +453,13 @@ declare type timestamp = number
 
 declare type message = {
     roomId?: number, // 该消息是在哪个房间中
-    id: number,
+    id?: number, // 消息id
+    date: timestamp, // 时间戳
     type: messageType
     from: username,
     to: chatConst.messageToAll | username,
     content: string,
-    url?: string[]
+    url?: string[] // 聊天图片的url
 }
 
 /**
@@ -368,7 +468,7 @@ declare type message = {
 declare type invite = {
     roomId: number,
     from: username,
-    to: username
+    to: username[]
 }
 
 declare const enum userLevel {
@@ -377,14 +477,23 @@ declare const enum userLevel {
     spuerAdmin = 2 // 超级管理员
 }
 
+declare const enum adminStatus {
+    uncheck = 0, // 尚未审核
+    fail = 1, // 审核不通过
+    pass = 2, // 审核通过
+}
+
 /**
  * 缓存数据键名
  */
 declare const enum cacheKey {
     k_roomId = 'k_roomId_', // 聊天室counter
-    h_username_room_msg = 'h_username_room_msg', // 用户消息
-    h_roomName_id = 'h_roomName_id_', // 聊天室名对应的id号
+    h_username_room_msg = 'h_username_room_msg_', // 用户消息
+    h_username_history_msg = 'h_username_history_msg_', // 用户历是消息
+    h_id_roomName = 'h_id_roomName_', // 聊天室名对应的id号
     s_username_roomId = 's_username_roomId_', // 用户曾加入过的聊天室
+    s_roomId_onlineList = 's_roomId_onlineList_', // 某房间在线用户
+    s_roomId_members = 's_roomId_memberst_', // 某房间全部用户
     k_room_messageCounter = 'k_room_messageCounter_', // 聊天室消息记录
     l_room_msg = 'l_room_msg_', // 聊天室消息队列
 }
@@ -405,4 +514,7 @@ declare const enum socketEvents {
     sendInvite = 'sendInvite', // 发送邀请
     newInvite = 'newInvite', // 发生新邀请事件
     sendNotice = 'sendNotice', // 发送一条新公告
+    readMsg = 'readMsg', // 阅读一条信息
+    createGroup = 'createGroup', // 创建群组
+    otherJoin = 'otherJoin', // 加入
 }

@@ -93,19 +93,21 @@
                         onClose: () => {
                             console.log('data==>', res)
                             this.$store.state.user.name = this.loginForm.username
+                            this.$store.state.user.img = res.data.img
                             this.$store.state.user.level = res.data.level
-                            this.$store.commit('login')
+                            this.$store.commit('LOGIN')
                             for (const room of res.data.rooms) {
                                 const session = {}
-                                // this.$store.state.sessions.id = room.roomId,
-                                // this.$store.state.sessions.members = room.members
-                                // this.$store.state.sessions.messages = []
                                 session.id = room.roomId,
+                                session.name = room.roomName,
+                                session.hasNewMsg = room.HasNewMsg,
                                 session.members = room.members
                                 session.messages = []
                                 for (const msg of room.msgs) {
+                                    const img = session.members.find(member => member.name === msg.from) ? session.members.find(member => member.name === msg.from).img : 'http://localhost:3000/upload/logo.png'
                                     const message = {
                                         from: msg.from,
+                                        img: img,
                                         id: msg.id,
                                         content: msg.content,
                                         date: msg.date || new Date().getTime(),
@@ -114,9 +116,11 @@
                                     }
                                     session.messages.push(message)
                                 }
-                                this.$store.state.sessions.push(session)
+                                this.$store.commit('ADD_SESSION', {
+                                    session
+                                })
                             }
-                            
+                            console.log(this.$store.state.sessions)
                             this.$router.push('/main')
                         }
                     })
