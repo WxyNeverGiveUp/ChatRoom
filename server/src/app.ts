@@ -1,6 +1,5 @@
 import * as Koa from 'koa'
 import * as http from 'http'
-import * as bodyparser from "koa-bodyparser"
 import * as socket from 'socket.io'
 import { config } from "./config/config"
 import { makeRouter } from './util/route'
@@ -31,7 +30,6 @@ server.on('listening', onListening)
  * use baseMid 处理同中间件 专门用来处理某些信息
  */
 app.use(logger)
-app.use(bodyparser())
 
 /**
  * 跨域

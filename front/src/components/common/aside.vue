@@ -55,7 +55,6 @@
                 {navName:'聊天室', route:'/', icon: 'el-icon-location', level: 0, subNav: [
                     {subNavName:'群聊', route:'/groupChat', icon: 'el-icon-location', level: 0},
                     {subNavName:'私聊', route:'/privateChat', icon: 'el-icon-location', level: 0},
-                    {subNavName:'所有人', route:'/', icon: 'el-icon-location', level: 0},
                 ]}
             ],
             isCollapse: false

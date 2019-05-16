@@ -64,6 +64,6 @@
 		color: #333;
 	}
 	.main-bg {
-		background-color: #dde0e2;
+		background-color: #fff;
 	}
 </style>

@@ -4,7 +4,7 @@ import * as socket from 'socket.io'
  * 聊天室名称
  */
 export const enum roomName {
-    publicRoom = 'publicRoom', // 公共聊天室
+    publicRoom = '用户大厅', // 公共聊天室
 }
 
 /**

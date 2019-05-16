@@ -8,6 +8,49 @@ export const adminTable = mysqlFactory<Table.admin>({
 export class AdminModel {
     constructor() {}
 
+    /** 
+     * @param usernmae 用户名
+     */
+    async get(username: username) {
+        const admin = await adminTable.get({username}, ['id', 'realname', 'academy', 'club', 'studynumber', 'position', 'username', 'is_pass'])
+        if (admin.length > 0) {
+            return {
+                id: admin[0].id,
+                realname: admin[0].realname,
+                academy: admin[0].academy,
+                club: admin[0].club,
+                studynumber: admin[0].studynumber,
+                position: admin[0].position,
+                username: admin[0].username,
+                isPass:  admin[0].is_pass
+            }
+        } else {
+            return null
+        }
+    }
+
+     /**
+     * 修改
+     * @param realname 姓名
+     * @param academy 学院
+     * @param club 社团
+     * @param studynumber 学号 
+     * @param position 职位
+     * @param username 用户名
+     */
+    async update(realname: string, academy: string, club: string, studynumber: number, position: string, username: string) {
+        await adminTable.update({
+            realname,
+            academy,
+            club,
+            studynumber,
+            position,
+            username,
+            is_pass: adminStatus.uncheck
+        }, {username})
+    }
+
+
     /**
      * 添加管理员
      * @param realname 姓名
@@ -69,6 +112,26 @@ export class AdminModel {
             })
         }
         return result
+    }
+
+    /**
+     * 拒绝管理员请求
+     * @param username
+     */
+    async rejectApply(username: username) {
+        await adminTable.update({
+            is_pass: adminStatus.fail
+        }, {username})
+    }
+
+    /**
+     * 同意管理员请求
+     * @param username
+     */
+    async agreeApply(username: username) {
+        await adminTable.update({
+            is_pass: adminStatus.pass
+        }, {username})
     }
 }
 

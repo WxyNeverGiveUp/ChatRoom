@@ -1,5 +1,5 @@
 import { Route } from "../util/route"
-import { getActivities, addActivity, delActivity, getActivityDetail } from "../controller/activity"
+import { getActivities, addActivity, delActivity, getActivityDetail, joinActivity, getActivityMembers } from "../controller/activity"
 
 export = [new Route({
     cmd: 'getAll',
@@ -16,5 +16,13 @@ export = [new Route({
 }), new Route({
     cmd: 'getDetail',
     handler: [getActivityDetail],
+    method: 'post'
+}), new Route({
+    cmd: 'join',
+    handler: [joinActivity],
+    method: 'post'
+}), new Route({
+    cmd: 'getMembers',
+    handler: [getActivityMembers],
     method: 'post'
 })]

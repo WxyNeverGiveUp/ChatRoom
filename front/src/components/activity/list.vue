@@ -14,25 +14,41 @@
         label="活动">
         </el-table-column>
         <el-table-column
+        prop="hostUnit"
+        label="承办社团">
+        </el-table-column>
+        <el-table-column
         prop="createTime"
-        label="创建时间">
+        label="发布日期">
         </el-table-column>
         <el-table-column
-        prop="beginTime"
-        label="开始时间">
+        prop="joinerCounter"
+        label="报名人数">
         </el-table-column>
         <el-table-column
-        prop="endTime"
-        label="结束时间">
-        </el-table-column>
-        <el-table-column
-        label="操作">
+        label="操作"
+        width="450"
+        >
             <template slot-scope="scope">
-                <el-button @click="handleClick(scope.row)" type="success">查看详情</el-button>
-                <el-button type="danger" @click="delActivity(scope.row.id)">删除</el-button>
+                <el-button @click="lookJoiners(scope.row)" v-if='$store.state.user.level >= 1'>查看报名名单</el-button>
+                <el-button @click="join(scope.row)" type="success" v-if="scope.row.endTimestamp > new Date().getTime()">报名</el-button>
+                <el-button type="success" disabled v-else>已结束</el-button>
+                <el-button @click="getDetail(scope.row)" type="primary">查看详情</el-button>
+                <el-button type="danger" @click="delActivity(scope.row.id)" v-if='$store.state.user.level >= 1'>删除</el-button>
             </template>
         </el-table-column>
     </el-table>
+    <el-dialog
+    title="报名名单"
+    :visible.sync="dialogVisible"
+    width="30%"
+    :before-close="handleClose">
+    <ul>
+        <li v-for="joiner in currentJoiners" :key="joiner">
+            {{ joiner }}
+        </li>
+    </ul>
+    </el-dialog>
     <el-pagination
         layout="prev, pager, next"
         @current-change="currentChange"
@@ -55,19 +71,42 @@
     export default {
         data() {
             return {
+                currentJoiners: [],
+                dialogVisible: false,
                 total: 0,
                 pagesize:9, //每页的数据条数
                 currentPage:1, //默认开始页面
-                tableData: [
-                ]
+                tableData: []
             }
         },
         methods: {
+            lookJoiners(row) {
+                this.dialogVisible = true
+                this.currentJoiners = row.joiners
+            },
+            handleClose(done) {
+                this.dialogVisible = false
+            },
             currentChange(currentPage) {
                 this.currentPage = currentPage
             },
-            handleClick(row) {
-                console.log(row)
+            getDetail(row) {
+                this.$router.push({
+                    name:'activityDetail',
+                    query:{
+                        id: row.id,
+                    }
+                })
+            },
+            async join(row) {
+                const result = await ajaxRequest.post('http://localhost:3000/activity/join', {
+                    id: row.id, 
+                    username: this.$store.state.user.name
+                })                 
+                this.$message({
+                    message: '报名成功',
+                    type: 'success'
+                })
             },
             async delActivity(id) {
                 this.$confirm('此操作将永久删除该活动, 是否继续?', '提示', {
@@ -110,7 +149,11 @@
                             title: item.title,
                             createTime: timeFormat(item.createTime, false),
                             beginTime: timeFormat(item.beginTime, false),
-                            endTime: timeFormat(item.endTime, false)
+                            endTime: timeFormat(item.endTime, false),
+                            endTimestamp: item.endTime,
+                            joiners: item.joiners,
+                            joinerCounter: item.joiners.length,
+                            hostUnit: item.hostUnit
                         })
                     }
                 }        

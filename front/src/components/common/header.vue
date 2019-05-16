@@ -3,6 +3,7 @@
         <div class='img-box clearfix'>
             <img class="avatar"  width="30" height="30" :alt="$store.state.user.name" :src="$store.state.user.img">
         </div>
+        {{ userLevel[$store.state.user.level] }}
         <el-button type="text" @click="dialogVisible = true">点击修改个人头像【{{ $store.state.user.name }}】</el-button>
         <el-dialog
         title="修改个人头像"
@@ -55,11 +56,11 @@
             cursor:pointer
         }
         .avatar {
-                float: left;
-                margin: 15px 10px 0 0;
-                border-radius: 3px;
-                border: 1px solid #fff;
-            }
+            float: left;
+            margin: 15px 10px 0 0;
+            border-radius: 3px;
+            border: 1px solid #fff;
+        }
     }
 </style>
 
@@ -70,6 +71,7 @@ export default {
     name: 'vheader',
     data() {
         return {
+            userLevel: ['普通用户', '社团管理员', '超级管理员'],
             dialogVisible: false,
             adminDialogVisible: false,
             ruleForm: {
@@ -109,10 +111,26 @@ export default {
         submitForm(formName) {
             this.$refs[formName].validate(async (valid) => {
                 if (valid) {
-                    const result = await ajaxRequest.post('http://localhost:3000/index/register', {
-                        username: this.registerForm.username,
-                        password: this.registerForm.pswd
+                    const result = await ajaxRequest.post('http://localhost:3000/admin/add', {
+                        realname: this.ruleForm.realname, 
+                        academy: this.ruleForm.academy, 
+                        club: this.ruleForm.club, 
+                        studynumber: this.ruleForm.studynumber, 
+                        position: this.ruleForm.position, 
+                        username: this.$store.state.user.name
                     })
+                    if (result.code !== 0) {
+                        this.$message({
+                            message: result.msg,
+                            type: 'error'
+                        })
+                    } else {
+                        this.$message({
+                            message: '申请成功，请等待审核',
+                            type: 'success'
+                        })
+                        this.adminDialogVisible = false
+                    }
                 } else {
                     return false
                 }

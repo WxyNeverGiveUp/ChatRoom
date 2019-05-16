@@ -1,7 +1,7 @@
 <template>
     <div style='text-align: center;margin-bottom: 10px;'>
         <el-button type="success" @click="dialogTableVisible = true">创建私聊/群聊</el-button>
-        <el-dialog title="选择群聊用户" :visible.sync="dialogTableVisible">
+        <el-dialog title="选择聊天用户" :visible.sync="dialogTableVisible">
             <template>
             <el-table
                 ref="multipleTable"
@@ -16,7 +16,7 @@
                 </el-table-column>
                 <el-table-column
                 prop="name"
-                label="姓名">
+                label="用户名">
                 </el-table-column>
             </el-table>
             <div style="margin-top: 20px">

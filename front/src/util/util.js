@@ -14,6 +14,10 @@ export function timeFormat(timestamp, isFull = true) {
     }
 }
 
-export function randomName() {
-    let pre = ['随机1', '随机2', '随机3']
+export function booleanCompare(property) {
+    return function(a, b) {
+        let value1 = a[property] || false
+        let value2 = b[property] || false
+        return Number(value2) - Number(value1)
+    }
 }

@@ -6,6 +6,9 @@
         <el-form-item label="作者" prop="author" required>
             <el-input v-model="ruleForm.author" :disabled="true"></el-input>
         </el-form-item>
+        <el-form-item label="举办社团" prop="hostUnit" required>
+            <el-input v-model="ruleForm.hostUnit"></el-input>
+        </el-form-item>
         <el-form-item label="活动时间" prop="date">
             <el-col :span="11">
                 <el-date-picker
@@ -46,12 +49,16 @@
                     title: '',
                     date: [],
                     author: this.$store.state.user.name,
-                    content: ''
+                    content: '',
+                    hostUnit: ''
                 },
                 rules: {
                     title: [
                         { required: true, message: '请输入活动名称', trigger: 'blur' },
                         { min: 3, max: 12, message: '长度在 3 到 12 个字符', trigger: 'blur' }
+                    ],
+                    hostUnit: [
+                        { required: true, message: '请输入举办社团', trigger: 'blur' },
                     ],
                     content: [
                         { required: true, message: '请填写活动详情', trigger: 'blur' }
@@ -74,7 +81,8 @@
                                 author: this.ruleForm.author,
                                 beginTime: this.ruleForm.date[0].getTime(),
                                 endTime: this.ruleForm.date[1].getTime(),
-                                content: this.resetForm.content
+                                content: this.ruleForm.content,
+                                hostUnit: this.ruleForm.hostUnit
                             })                 
                             if (result.code === 0) {
                                 this.$message({

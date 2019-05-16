@@ -30,7 +30,7 @@ export async function addActivity(ctx: Koa.Context) {
         data: null
     }
     console.log(req)
-    await activityModel.add(req.title, req.content, req.author, Number(req.beginTime), Number(req.endTime))
+    await activityModel.add(req.title, req.content, req.author, Number(req.beginTime), Number(req.endTime), req.hostUnit)
     ctx.body = resData
     return
 }
@@ -77,4 +77,35 @@ export async function getActivityDetail(ctx: Koa.Context) {
     
     ctx.body = resData
     return resData
+}
+
+/**
+ * 获取活动参与人数
+ */
+export async function getActivityMembers(ctx: Koa.Context) {
+    const req: routeParams.getActivityMembers.request = ctx.request.body
+    let resData: routeParams.getActivityMembers.response = {
+        code: AppCode.done,
+        data: {
+            list: []
+        }
+    }
+    let result = await activityModel.getMembers(req.id)
+    resData.data.list = result
+    ctx.body = resData
+    return
+}
+
+/**
+ * 加入活动
+ */
+export async function joinActivity(ctx: Koa.Context) {
+    const req: routeParams.joinActivity.request = ctx.request.body
+    let resData: routeParams.joinActivity.response = {
+        code: AppCode.done,
+        data: null
+    }
+    await activityModel.join(req.id, req.username)
+    ctx.body = resData
+    return
 }

@@ -240,7 +240,7 @@ export class Chatter {
      */
     async getRooms(): Promise<number[]> {
         return await this.roomSet.getAll()
-    }
+    } 
 
     /**
      * 加入聊天室

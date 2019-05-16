@@ -80,6 +80,8 @@ declare const enum AppCode {
     loginError = 1002, // 用户名不存在或密码错误
     roomNotExist = 1003, // 该房间不存在
     activityNotExist = 1004, // 该房间不存在
+    adminNotExist = 1005, // 该管理员不存在
+    adminUncheck = 1006, // 未审核
 }
 
 declare const enum AppMsg {
@@ -88,6 +90,8 @@ declare const enum AppMsg {
     roomNotExist = '该房间不存在',
     registerSuccess = '注册成功',
     activityNotExist = '该活动不存在',
+    adminNotExist = '该管理员不存在',
+    adminUncheck = '管理员申请正在审核中，请勿重复申请'
 }
 
 interface baseResponse {
@@ -103,7 +107,6 @@ declare namespace routeParams {
         interface request {
             username: string,
             password: string,
-            nickname: string,
             level: number
         }
         interface response extends baseResponse {
@@ -326,6 +329,8 @@ declare namespace routeParams {
             author: string, // 作者
             beginTime: timestamp, // 开始时间
             endTime: timestamp, // 结束时间
+            hostUnit: string, // 举办单位
+            joiners: username[]
         }
 
         interface response extends baseResponse {
@@ -370,6 +375,35 @@ declare namespace routeParams {
     }
 
     /**
+     * 获取活动报名情况
+     */
+    namespace getActivityMembers {
+        interface request {
+            id: number
+        }
+
+        interface response extends baseResponse {
+            data: {
+                list: username[]
+            }
+        }
+    }
+
+    /**
+     * 加入活动
+     */
+    namespace joinActivity {
+        interface request {
+            id: number,
+            username: username
+        }
+
+        interface response extends baseResponse {
+            data: null
+        }
+    }
+
+    /**
      * 获取所有管理员
      */
     namespace getAdmins {
@@ -406,6 +440,49 @@ declare namespace routeParams {
             }
         }
     }
+
+    /**
+     * 删除管理员
+     */
+    namespace delAdmin {
+        interface request {
+            username: username
+        }
+        interface response extends baseResponse {
+            data: {
+            }
+        }
+    }
+
+    /**
+     * 审核管理员
+     */
+    namespace checkAdmin {
+        interface request {
+            username: username,
+            isPass: boolean
+        }
+        interface response extends baseResponse {
+            data: {
+                username: username,
+                isPass: boolean
+            }
+        }
+    }
+
+    /**
+     * 获取管理员状态
+     */
+    namespace getAdminStatus {
+        interface request {
+            username: username
+        }
+        interface response extends baseResponse {
+            data: {
+                status: number
+            }
+        }
+    }
 }
 
 declare namespace Table {
@@ -413,7 +490,6 @@ declare namespace Table {
         id?: number, // 自动填充id
         username: string,
         password: string,
-        nickname: string,
         level: number
     }
     interface activity {
@@ -424,6 +500,7 @@ declare namespace Table {
         create_time: Date, // 发布时间
         begin_time: Date, // 开始时间
         end_time: Date, // 结束时间
+        host_unit: string, // 举办单位
     }
     interface admin {
         id?: number, // admin自增
@@ -478,6 +555,7 @@ declare const enum userLevel {
 }
 
 declare const enum adminStatus {
+    unapply = -1, // 未申请
     uncheck = 0, // 尚未审核
     fail = 1, // 审核不通过
     pass = 2, // 审核通过
@@ -496,6 +574,7 @@ declare const enum cacheKey {
     s_roomId_members = 's_roomId_memberst_', // 某房间全部用户
     k_room_messageCounter = 'k_room_messageCounter_', // 聊天室消息记录
     l_room_msg = 'l_room_msg_', // 聊天室消息队列
+    s_activity_members_id = 's_activity_members_id_', // 活动报名
 }
 
 /**
@@ -517,4 +596,6 @@ declare const enum socketEvents {
     readMsg = 'readMsg', // 阅读一条信息
     createGroup = 'createGroup', // 创建群组
     otherJoin = 'otherJoin', // 加入
+    adminCheck = 'adminCheck', // 管理员审核
+    newCheck = 'newCheck', // 审核通知
 }

@@ -10,26 +10,35 @@
         width="150">
         </el-table-column>
         <el-table-column
-        prop="title"
-        label="活动">
+        prop="realname"
+        label="真实姓名">
         </el-table-column>
         <el-table-column
-        prop="createTime"
-        label="创建时间">
+        prop="academy"
+        label="学院">
         </el-table-column>
         <el-table-column
-        prop="beginTime"
-        label="开始时间">
+        prop="studynumber"
+        label="学号">
         </el-table-column>
         <el-table-column
-        prop="endTime"
-        label="结束时间">
+        prop="club"
+        label="所在社团">
         </el-table-column>
         <el-table-column
-        label="操作">
+        prop="position"
+        label="社团职位">
+        </el-table-column>
+        <el-table-column
+        prop="isPass"
+        label="审核状态">
+        </el-table-column>
+        <el-table-column
+        label="操作"
+        width="300">
             <template slot-scope="scope">
-                <el-button @click="handleClick(scope.row)" type="success">查看详情</el-button>
-                <el-button type="danger" @click="delActivity(scope.row.id)">删除</el-button>
+                <el-button type="success" @click="checkAdmin(scope.row, scope.row.username, true)">审核通过</el-button>
+                <el-button type="danger" @click="checkAdmin(scope.row, scope.row.username, false)">审核不通过</el-button>
             </template>
         </el-table-column>
     </el-table>
@@ -69,34 +78,30 @@
             handleClick(row) {
                 console.log(row)
             },
-            async delActivity(id) {
-                this.$confirm('此操作将永久删除该活动, 是否继续?', '提示', {
+            async checkAdmin(row, username, isPass) {
+                this.$confirm(`审批【${isPass ? '通过' : '不通过'}】, 是否继续?`, '提示', {
                     confirmButtonText: '确定',
                     cancelButtonText: '取消',
                     type: 'warning'
                 }).then(async () => {
-                    const result = await ajaxRequest.post('http://localhost:3000/activity/del', {id})                 
-                    if (result.code !== 0) {
-                        this.$message({
-                            message: result.msg || '发生意外的错误！',
-                            type: 'error'
-                        })
-                    } else {
-                        this.tableData.splice(this.tableData.findIndex((i) => i.id === id),1)
-                        this.$message({
-                            type: 'success',
-                            message: '删除成功!'
-                        })
-                    } 
+                    this.$socket.emit('adminCheck', {
+                        username: username,
+                        isPass
+                    })
+                    this.$message({
+                        message: '审批完成',
+                        type: 'success'
+                    })
+                    row.isPass = isPass ? '通过' : '不通过'
                 }).catch(() => {
                     this.$message({
                         type: 'info',
-                        message: '已取消删除'
+                        message: '取消管理员审批'
                     })         
                 })
             },
             async getList() {
-                const result = await ajaxRequest.get('http://localhost:3000/activity/getAll', {})                 
+                const result = await ajaxRequest.get('http://localhost:3000/admin/getAll', {})                 
                 console.log(result)
                 if (result.code !== 0) {
                     this.$message({
@@ -106,11 +111,13 @@
                 } else {
                     for (const item of result.data.list) {
                         this.tableData.push({
-                            id: item.id,
-                            title: item.title,
-                            createTime: timeFormat(item.createTime, false),
-                            beginTime: timeFormat(item.beginTime, false),
-                            endTime: timeFormat(item.endTime, false)
+                            realname: item.realname,
+                            academy: item.academy,
+                            club: item.club,
+                            studynumber: item.studynumber,
+                            position: item.position,
+                            username: item.username,
+                            isPass: ['未审核', '不通过', '通过'][item.isPass]
                         })
                     }
                 }        

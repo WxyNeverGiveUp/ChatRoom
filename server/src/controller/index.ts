@@ -18,7 +18,7 @@ export async function register(ctx: Koa.Context) {
     }
     const user = await userModel.getUserInfo(req.username)
     if (!user) {
-        await userModel.addUser(req.username, req.password, req.nickname, req.level || userLevel.spuerAdmin)
+        await userModel.addUser(req.username, req.password, req.level || userLevel.visitor)
     } else {
         resData.msg = AppMsg.userExist
         resData.code = AppCode.userExist

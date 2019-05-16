@@ -4,6 +4,8 @@ import * as socket from 'socket.io'
 import { roomManager, publicRoom } from '../app';
 import { socketPrivateSend, socketBroadcast } from '../util/socket';
 import { chatterManager, Chatter } from '../models/chatter';
+import { adminModel } from '../models/adminModel';
+import { userModel } from '../models/userModel';
 
 export function listenSocket(io: socket.Server) {
     /**
@@ -155,48 +157,43 @@ export function listenSocket(io: socket.Server) {
             /**
              * to某个人 私聊
              */
-            // if (req.message.to !== chatConst.messageToAll) {
-            //     const users = [req.message.from, req.message.to]
-            //     let roomId = roomManager.getPrivateRoomId(users)
-            //     /**
-            //      * 如果没有私聊房间则先发出私聊请求
-            //      */
-            //     if (!roomId) {
-            //         const newRoom = await roomManager.createRoom(users),
-            //             fromUser = chatterManager.getChatter(req.message.from)
-            //         socket.join(newRoom.getNameEvent())
-            //         fromUser.joinRoom(newRoom.getId())
-
-            //         /**
-            //          * 发送邀请
-            //          */
-            //         await socketBroadcast<routeParams.newInvite.response>(socket, socketEvents.newInvite, {
-            //             code: AppCode.done,
-            //             data: {
-            //                 invite: {
-            //                     roomId: newRoom.getId(),
-            //                     from: req.message.from,
-            //                     to: req.message.to
-            //                 }
-            //             }
-            //         })
-            //     } 
-            //     // else {
-            //     //     /**
-            //     //      * 有房间的话直接发送消息
-            //     //      */
-            //     //     const retData = await sendMsg(req)
-            //     //     await socketPrivateSend<routeParams.sendMsg.response>(io, socketEvents.sendMsg, req.message.from, retData)
-            //     // }
-            // } 
-            // else {
-            //     // to所有人 群聊
-            //     // 直接向聊天室广播
-            //     const retData = await sendMsg(req)
-            //     await socketPrivateSend<routeParams.sendMsg.response>(io, socketEvents.sendMsg, req.message.from, retData)
-            // }  
             const retData = await sendMsg(req)
             await socketPrivateSend<routeParams.sendMsg.response>(io, socketEvents.sendMsg, socket.id, retData)       
+        })
+
+        /**
+         * 监听审核事件
+         */
+        socket.on(socketEvents.adminCheck, async (req: routeParams.checkAdmin.request) => {
+            const admin = await adminModel.get(req.username)
+            if (admin) {
+                if (req.isPass) {
+                    await adminModel.agreeApply(req.username)
+                    await userModel.updateLevel(req.username, 1)
+                } else {
+                    await adminModel.rejectApply(req.username)
+                }
+                await socketPrivateSend<routeParams.checkAdmin.response>(io, socketEvents.sendMsg, socket.id, {
+                    code: AppCode.done,
+                    data: {
+                        username: req.username,
+                        isPass: req.isPass
+                    }
+                }) 
+                // 审核完后广播  
+                socket.broadcast.to(publicRoom.getNameEvent()).emit(socketEvents.newCheck, {
+                    code: AppCode.done,
+                    data: {
+                        username: req.username,
+                        isPass: req.isPass
+                    }
+                })   
+            } else {
+                await socketPrivateSend(io, socketEvents.sendMsg, socket.id, {
+                    code: AppCode.adminNotExist,
+                    msg: AppCode.adminNotExist
+                })       
+            }
         })
 
         /**
