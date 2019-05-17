@@ -12,7 +12,6 @@
                     </div>
                     <div class="op">
                         <i class="fa fa-comment" @click="createChat(item.name)" v-if='$store.state.user.name !== item.name'></i>
-                        <i class="fa fa-times"></i>
                     </div>
                 </li>
             </ul>

@@ -162,6 +162,16 @@ export function listenSocket(io: socket.Server) {
         })
 
         /**
+         * 活动广播
+         */
+        socket.on(socketEvents.newBroadcast, async (req: routeParams.newBroadcast.request) => {
+            socket.broadcast.to(publicRoom.getNameEvent()).emit(socketEvents.newBroadcast, {
+                activity: req.activity,
+                content: req.content
+            })  // 向所有人发送需要广播的消息
+        })
+
+        /**
          * 监听审核事件
          */
         socket.on(socketEvents.adminCheck, async (req: routeParams.checkAdmin.request) => {

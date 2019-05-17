@@ -8,7 +8,6 @@ import { booleanCompare } from '../../util/util';
 export default {
     sockets: {
         newInvite: function(res) {
-            console.log('接到了新邀请', res)
             if (res.data.invite.to.includes(this.$store.state.user.name)) {
                 this.$notify({
                     title: '聊天邀请通知',
@@ -79,14 +78,6 @@ export default {
             }
         },
         readMsg: function(res) {
-            if (this.$store.state.user.isLogin) {
-                this.$notify({
-                    title: '阅读信息',
-                    position: 'bottom-right',                    
-                    message: `${JSON.stringify(res)} 已经阅读了哦`
-                })
-                this.$store.state.sessions.sort(booleanCompare('hasNewMsg'))
-            }
         },
         newMsg: function(res) {
             if (this.$store.state.user.isLogin && res.from !== this.$store.state.user.name) {
@@ -165,6 +156,17 @@ export default {
                 } else {
                     this.$store.state.user.level = 0
                 }
+            }
+        },
+        newBroadcast: function(res) {
+            if (this.$store.state.user.isLogin) {
+                this.$notify({
+                    title: '活动通知',
+                    position: 'bottom-right',                    
+                    message: `【${res.activity}】即将开始，大家快来报名！`,
+                    duration: 4000,
+                    type: 'success'
+                })
             }
         }
     }

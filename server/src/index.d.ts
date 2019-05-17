@@ -239,6 +239,23 @@ declare namespace routeParams {
         } 
     }
 
+    /**
+     * 新广播
+     */
+    namespace newBroadcast {
+        interface request {
+            activity: string,
+            content: string
+        }
+
+        interface response extends baseResponse {
+            data: {
+                activity: string,
+                content: string
+            }
+        }
+    }
+
 
     /**
      * 新消息
@@ -598,4 +615,5 @@ declare const enum socketEvents {
     otherJoin = 'otherJoin', // 加入
     adminCheck = 'adminCheck', // 管理员审核
     newCheck = 'newCheck', // 审核通知
+    newBroadcast = 'newBroadcast', // 新的广播
 }

@@ -40,6 +40,8 @@ export default {
         editor() {
             return this.$refs.myQuillEditor.quill;
         },
+    },
+    created() {
     }
 }
 </script>
@@ -48,5 +50,7 @@ export default {
 <style lang="less" scoped>
     .edit_container {
         background-color: #fff;
+        height: 240px;
+        overflow-x: auto;
     }
 </style>

@@ -100,7 +100,7 @@
                                 const session = {}
                                 session.id = room.roomId,
                                 session.name = room.roomName,
-                                session.hasNewMsg = room.HasNewMsg,
+                                session.hasNewMsg = room.hasNewMsg,
                                 session.members = room.members
                                 session.messages = []
                                 for (const msg of room.msgs) {

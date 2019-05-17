@@ -20,13 +20,6 @@ export default {
        sendMsg: function(res) {
             console.log('sendMessage==>', res)
             if (this.$store.state.user.isLogin) {
-                this.$notify({
-                    title: '成功发送消息',
-                    position: 'bottom-right',                    
-                    message: `${content}`,
-                    duration: 1000,
-                    type: 'success'
-                })
                 this.$store.commit('SEND_MESSAGE', {
                     message: {
                         from:  res.data.from,
@@ -78,11 +71,12 @@ export default {
 
 <style lang="less" scoped>
 .text {
-    height: 160px;
+    height: 130px;
     border-top: solid 1px #ddd;
     textarea {
         padding: 10px;
-        height: 100%;
+        height: 130px;
+        overflow-y: auto;
         width: 100%;
         border: none;
         outline: none;

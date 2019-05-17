@@ -27,9 +27,10 @@
         </el-table-column>
         <el-table-column
         label="操作"
-        width="450"
+        width="600"
         >
             <template slot-scope="scope">
+                <el-button type="warning" @click="broadcast(scope.row)">通知</el-button>
                 <el-button @click="lookJoiners(scope.row)" v-if='$store.state.user.level >= 1'>查看报名名单</el-button>
                 <el-button @click="join(scope.row)" type="success" v-if="scope.row.endTimestamp > new Date().getTime()">报名</el-button>
                 <el-button type="success" disabled v-else>已结束</el-button>
@@ -80,6 +81,12 @@
             }
         },
         methods: {
+            broadcast(row) {
+                this.$socket.emit('newBroadcast', {
+                    activity: row.title,
+                    content: ''
+                })
+            },
             lookJoiners(row) {
                 this.dialogVisible = true
                 this.currentJoiners = row.joiners
