@@ -172,6 +172,7 @@ export function listenSocket(io: socket.Server) {
                     await userModel.updateLevel(req.username, 1)
                 } else {
                     await adminModel.rejectApply(req.username)
+                    await userModel.updateLevel(req.username, 0)
                 }
                 await socketPrivateSend<routeParams.checkAdmin.response>(io, socketEvents.sendMsg, socket.id, {
                     code: AppCode.done,
