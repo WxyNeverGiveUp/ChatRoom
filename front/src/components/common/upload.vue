@@ -15,7 +15,7 @@
 			</el-upload>
 		</el-form-item>
 		<el-form-item>
-			<el-button size="small" type="primary" @click="uploadFile">立即上传</el-button>
+			<el-button size="small" type="primary" @click="uploadFile">立即修改</el-button>
 		</el-form-item>
 	</el-form>
 </template>
