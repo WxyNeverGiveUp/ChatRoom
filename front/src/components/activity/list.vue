@@ -30,7 +30,7 @@
         width="600"
         >
             <template slot-scope="scope">
-                <el-button type="warning" @click="broadcast(scope.row)">通知</el-button>
+                <el-button type="warning" @click="broadcast(scope.row)" v-if='$store.state.user.level >= 1'>通知</el-button>
                 <el-button @click="lookJoiners(scope.row)" v-if='$store.state.user.level >= 1'>查看报名名单</el-button>
                 <el-button @click="join(scope.row)" type="success" v-if="scope.row.endTimestamp > new Date().getTime()">报名</el-button>
                 <el-button type="success" disabled v-else>已结束</el-button>

@@ -22,7 +22,7 @@ export default {
     },
     data() {
         return {
-            content: `<p></p><p><br></p><ol><li><strong><em>Or drag/paste an image here.</em></strong></li><li><strong><em>rerew</em></strong></li><li><strong><em>rtrete</em></strong></li><li><strong><em>tytrytr</em></strong></li><li><strong><em>uytu</em></strong></li></ol>`,
+            content: ``,
             editorOption: {}
         }
     },
