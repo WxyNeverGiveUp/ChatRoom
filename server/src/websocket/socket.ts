@@ -165,6 +165,7 @@ export function listenSocket(io: socket.Server) {
          * 活动广播
          */
         socket.on(socketEvents.newBroadcast, async (req: routeParams.newBroadcast.request) => {
+            console.log(req.activity)
             socket.broadcast.to(publicRoom.getNameEvent()).emit(socketEvents.newBroadcast, {
                 activity: req.activity,
                 content: req.content
