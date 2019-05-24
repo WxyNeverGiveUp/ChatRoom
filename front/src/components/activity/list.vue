@@ -114,6 +114,11 @@
                     message: '报名成功',
                     type: 'success'
                 })
+                for (let i = 0; i < this.tableData.length; i++) {
+                    if (this.tableData[i].id === row.id) {
+                        this.tableData[i].joinerCounter += 1
+                    }
+                }
             },
             async delActivity(id) {
                 this.$confirm('此操作将永久删除该活动, 是否继续?', '提示', {
