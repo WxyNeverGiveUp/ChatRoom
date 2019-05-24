@@ -2,7 +2,7 @@ import * as Koa from 'koa';
 import { adminModel } from '../models/adminModel';
 
 /**
- * 查看全部管理员
+ * 查看全部提交的管理员申请
  * http请求
  */
 export async function getAdmins(ctx: Koa.Context) {
@@ -33,10 +33,10 @@ export async function addAdmin(ctx: Koa.Context) {
     if (!result) {
         await adminModel.add(req.realname, req.academy, req.club, Number(req.studynumber), req.position, req.username)
     } else {
-        if (result.isPass === adminStatus.uncheck) {
+        if (result.isPass === adminStatus.uncheck) { // 已申请，待审核
             resData.code = AppCode.adminUncheck
-            resData.msg = AppMsg.adminUncheck
-        } else {
+            resData.msg = AppMsg.adminUncheck 
+        } else { // 已申请，已经拒绝，重新申请
             await adminModel.update(req.realname, req.academy, req.club, Number(req.studynumber), req.position, req.username)
         }
     }
@@ -44,22 +44,8 @@ export async function addAdmin(ctx: Koa.Context) {
     return
 }
 
-// /**
-//  * 删除某个管理员
-//  * http请求
-//  */
-// export async function delAdmin(ctx: Koa.Context) {
-//     const req: routeParams.delActivitiy.request = ctx.request.body
-//     let resData: routeParams.delActivitiy.response = {
-//         code: AppCode.done,
-//         data: null
-//     }
-//     ctx.body = resData
-//     return resData
-// }
-
 /**
- * 获取审核状态
+ * 查看单个申请的审核状态
  * http请求
  */
 export async function getStatus(ctx: Koa.Context) {
@@ -67,7 +53,7 @@ export async function getStatus(ctx: Koa.Context) {
     let resData: routeParams.getAdminStatus.response = {
         code: AppCode.done,
         data: {
-            status: adminStatus.unapply
+            status: adminStatus.unapply // 默认未申请
         }
     }
     const result = await adminModel.get(req.username)

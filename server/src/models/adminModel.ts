@@ -9,6 +9,7 @@ export class AdminModel {
     constructor() {}
 
     /** 
+     * 查社团管理员提交的申请
      * @param usernmae 用户名
      */
     async get(username: username) {
@@ -30,7 +31,7 @@ export class AdminModel {
     }
 
      /**
-     * 修改
+     * 修改 （未用）
      * @param realname 姓名
      * @param academy 学院
      * @param club 社团
@@ -83,7 +84,7 @@ export class AdminModel {
     }
 
     /**
-     * 审核装填
+     * 审核状态 (未使用)
      * @param username 用户username
      * @return [Table.activity || null] 用户信息或者是null
      */

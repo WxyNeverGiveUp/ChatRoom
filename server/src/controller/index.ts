@@ -103,10 +103,9 @@ export async function login(req: routeParams.login.request) {
         console.log(`【${req.username}】登陆了`)
         // 创建一个聊天者实例
         const user = chatterManager.getChatter(req.username)
-        await chatterManager.onlineRooms(req.username)
-        await user.joinRoom(publicRoom.getId())
+        await chatterManager.onlineRooms(req.username) // 房间实例记录该用户上线
+        await user.joinRoom(publicRoom.getId()) // 默认加入公共聊天室
 
-        // 默认加入公共聊天室
         const roomIds = await user.getRooms()
         if (roomIds.length > 0) {
             for (const roomId of roomIds) {

@@ -5,7 +5,7 @@ import { io } from '../app'
 import { Chatter } from './chatter';
 
 /**
- * 全部聊天室管理类
+ * 全部聊天室管理类 所有聊天室的聚合
  */
 export class RoomManager {
     private id: CacheKeyVal // 聊天室唯一ID
@@ -91,8 +91,8 @@ class Room {
     private roomName: string
     private onlineList: CacheSet<username>
     private members: CacheSet<username>
-    private messageList: CacheList<message>
-    private messageCounter: CacheKeyVal // 聊天室消息缓存
+    private messageList: CacheList<message> // 消息
+    private messageCounter: CacheKeyVal // 聊天室消息计数器
     constructor(roomName: string, id: number) {
         this.roomName = roomName
         this.id = id
@@ -197,10 +197,10 @@ class Room {
     }
 
     /**
-     * 获取房间名
+     * 返回房间名事件
      */
     getNameEvent() {
-        return 'room' + this.getId()
+        return 'room' + this.getId() // 增加room前缀保证唯一性
     }
 
     /**
@@ -223,7 +223,7 @@ class Room {
      * @param msg 消息
      */
     async sendMessage(msg: message) {
-        io.to(this.getNameEvent()).emit(socketEvents.newMsg, msg) // 向房间在线的人广播
+        io.to(this.getNameEvent()).emit(socketEvents.newMsg, msg) // 向房间在线的人广播newMsg事件
         const members = await this.members.getAll()
         for (const member of members) {
             if (member !== msg.from) {

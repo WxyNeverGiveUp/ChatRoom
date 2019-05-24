@@ -3,7 +3,7 @@ import axios from 'axios'
 
 const loadingOptions = {
     lock: true,
-    text: "拼命加载中",
+    text: "拼命爬取数据中",
     spinner: "el-icon-loading",
     background: "rgba(0, 0, 0, 0.7)"
 }

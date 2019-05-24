@@ -17,7 +17,7 @@ export function listenSocket(io: socket.Server) {
          */
         socket.on(socketEvents.login, async (req: routeParams.login.request) => {
             const chatter = chatterManager.createChatter(req.username, socket.id)
-            const retData = await login(req)
+            const retData = await login(req)  // 组合登陆需要的数据
             await socketPrivateSend<routeParams.login.response>(io, socketEvents.login, socket.id, retData)
             if (retData.code === AppCode.done) { 
                 socket.join(publicRoom.getNameEvent())
@@ -54,7 +54,7 @@ export function listenSocket(io: socket.Server) {
         socket.on(socketEvents.leave, async (req: routeParams.leave.request) =>{
             const room = roomManager.getRoom(req.roomId)
             socket.leave(room.getNameEvent())
-            const retData = await leave(req)
+            const retData = await leave(req) // 房间离开
             await socketPrivateSend<routeParams.leave.response>(io, socketEvents.leave, socket.id, retData)
             socket.broadcast.to(room.getNameEvent()).emit(socketEvents.otherLeave, {
                 username: req.user,
@@ -74,7 +74,7 @@ export function listenSocket(io: socket.Server) {
         })
 
         /**
-         * 创建群聊
+         * 创建聊天
          */
         socket.on(socketEvents.createGroup, async (req: routeParams.createGroup.request) => {
             // 创建房间后 每个人都会加入房间
@@ -226,7 +226,7 @@ export function listenSocket(io: socket.Server) {
         })
 
         /**
-         * 断线 事件监听
+         * 点击x断线 事件监听
          */
         socket.on('disconnect', async () =>{
             const name = chatterManager.socket2name(socket.id)

@@ -4,6 +4,9 @@ import { roomManager } from '../app';
 import * as fs from 'fs'
 import * as path from 'path'
 
+/**
+ * 聚合管理所有聊天者的唯一实例
+ */
 class ChatterManager {
     public chatters: Map<username, Chatter> // 用户map
     public socketIdMap: Map<string, username> // socketId 对应的username
@@ -38,8 +41,8 @@ class ChatterManager {
     }
 
     /**
-     * 清除聊天者
-     * @param socketId socket连接ID
+     * 清除聊天者 释放内存
+     * @param user username
      */
     delChatter (user: username) {
         const chatter = this.chatters.get(user)
@@ -94,6 +97,9 @@ class ChatterManager {
 
 export const chatterManager = new ChatterManager()
 
+/**
+ * 每一个聊天者实例
+ */
 export class Chatter {
     private socketId: string // 每个用户连接时的socketId 断开后销毁
     private username: username
@@ -133,7 +139,7 @@ export class Chatter {
             key: cacheKey.h_username_history_msg + user
         })
         /**
-         * 历史消息
+         * 添加历史消息
          */
         let historyMsgList = await history.getField(message.roomId + '')
         if (!historyMsgList) {
@@ -144,7 +150,7 @@ export class Chatter {
         }
 
         /**
-         * 当前消息
+         * 添加当前未读消息
          */
         let msgList = await roomMsg.getField(message.roomId + '')
         if (!msgList) {
@@ -205,7 +211,7 @@ export class Chatter {
     }
 
     /**
-     * 获取历时未读消息
+     * 获取历史消息
      * @param roomId 房间
      */
     async getHistory(roomId: number) {

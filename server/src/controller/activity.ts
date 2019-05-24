@@ -29,7 +29,6 @@ export async function addActivity(ctx: Koa.Context) {
         code: AppCode.done,
         data: null
     }
-    console.log(req)
     await activityModel.add(req.title, req.content, req.author, Number(req.beginTime), Number(req.endTime), req.hostUnit)
     ctx.body = resData
     return
@@ -47,7 +46,7 @@ export async function delActivity(ctx: Koa.Context) {
     }
     await activityModel.del(Number(req.id))
     ctx.body = resData
-    return resData
+    return
 }
 
 /**
@@ -76,7 +75,7 @@ export async function getActivityDetail(ctx: Koa.Context) {
     }
     
     ctx.body = resData
-    return resData
+    return
 }
 
 /**

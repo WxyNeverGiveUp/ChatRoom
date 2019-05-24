@@ -55,7 +55,7 @@ export async function sendMsg(req: routeParams.sendMsg.request){
 }
 
 /**
- * 退出
+ * 退出登录
  */
 export async function logout(req: routeParams.logout.request) {
     let retData: routeParams.logout.response = {

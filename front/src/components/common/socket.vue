@@ -7,6 +7,7 @@
 import { booleanCompare } from '../../util/util';
 export default {
     sockets: {
+        // 新邀请
         newInvite: function(res) {
             if (res.data.invite.to.includes(this.$store.state.user.name)) {
                 this.$notify({
@@ -29,12 +30,13 @@ export default {
                 })
             }
         },
+        // 别人登录
         otherLogin: function(res) {
             for (let i = 0; i < this.$store.state.sessions.length; i++) {
                     for (let j = 0; j < this.$store.state.sessions[i].members.length; j++) {
                         if (this.$store.state.sessions[i].members[j].name === res.username) {
                             this.$store.state.sessions[i].members[j].isOnline = true
-                            this.$store.state.sessions[i].members.sort(booleanCompare('isOnline'))
+                            this.$store.state.sessions[i].members.sort(booleanCompare('isOnline')) // 列表在线离线排序
                         }
                     }
                 }
@@ -59,17 +61,17 @@ export default {
                 })
             }
         },
+        // 有人退出了
         otherLogout: function(res) {
             for (let i = 0; i < this.$store.state.sessions.length; i++) {
                 for (let j = 0; j < this.$store.state.sessions[i].members.length; j++) {
                     if (this.$store.state.sessions[i].members[j].name === res.username) {
                         this.$store.state.sessions[i].members[j].isOnline = false
-                        this.$store.state.sessions[i].members.sort(booleanCompare('isOnline'))
+                        this.$store.state.sessions[i].members.sort(booleanCompare('isOnline'))//排
                     }
                 }
             }
             if (this.$store.state.user.isLogin) {
-
                 this.$notify({
                     title: '下线通知',
                     position: 'bottom-right',                    
@@ -114,7 +116,7 @@ export default {
                 for (let i = 0; i < this.$store.state.sessions.length; i++) {
                     if (this.$store.state.sessions[i].id === res.roomId) {
                         const index = this.$store.state.sessions[i].members.findIndex(item => item.name === res.name)
-                        this.$store.state.sessions[i].members.splice(index, 1)
+                        this.$store.state.sessions[i].members.splice(index, 1) //删掉离开的
                     }
                 } 
                 this.$notify({

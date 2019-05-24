@@ -579,13 +579,17 @@ declare const enum adminStatus {
 }
 
 /**
- * 缓存数据键名
+ * 缓存数据键名 
+ * k keyVal键值对
+ * h hash结构
+ * l list队列结构
+ * s set集合
  */
 declare const enum cacheKey {
-    k_roomId = 'k_roomId_', // 聊天室counter
+    k_roomId = 'k_roomId_', // 聊天室计数器
     h_username_room_msg = 'h_username_room_msg_', // 用户消息
-    h_username_history_msg = 'h_username_history_msg_', // 用户历是消息
-    h_id_roomName = 'h_id_roomName_', // 聊天室名对应的id号
+    h_username_history_msg = 'h_username_history_msg_', // 用户历史消息
+    h_id_roomName = 'h_id_roomName_', // 聊天室名对应的id号 id是key roomName是value
     s_username_roomId = 's_username_roomId_', // 用户曾加入过的聊天室
     s_roomId_onlineList = 's_roomId_onlineList_', // 某房间在线用户
     s_roomId_members = 's_roomId_memberst_', // 某房间全部用户
