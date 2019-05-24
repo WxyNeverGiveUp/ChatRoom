@@ -44,11 +44,11 @@
     :visible.sync="dialogVisible"
     width="30%"
     :before-close="handleClose">
-    <ul>
-        <li v-for="joiner in currentJoiners" :key="joiner">
-            {{ joiner }}
-        </li>
-    </ul>
+        <ul>
+            <li v-for="joiner in currentJoiners" :key="joiner">
+                {{ joiner }}
+            </li>
+        </ul>
     </el-dialog>
     <el-pagination
         layout="prev, pager, next"
@@ -62,6 +62,12 @@
     .el-pagination {
         margin-top: 20px; 
         text-align: center;
+    }
+    ul li {
+        width: 50%;
+        border-bottom: 1px solid #a19b9b;
+        padding: 5px;
+        font-size: 20px;
     }
 </style>
 
